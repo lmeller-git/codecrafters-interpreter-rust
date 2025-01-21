@@ -2,8 +2,11 @@
 
 use std::{
     fmt::{Debug, Display},
+    str::FromStr,
     vec,
 };
+
+use super::LexingError;
 
 pub const EOF_CHAR: char = '\0';
 
@@ -27,6 +30,7 @@ impl Display for Token {
                 "[line {}] Error: UNexpected character: {:?}",
                 self.line, self.kind
             ),
+            TokenType::Literal(_) => write!(f, "{}", self.kind),
             TokenType::SingleLineComment(_) | TokenType::MultiLineComment(_) => Ok(()),
             _ => write!(f, "{} null", self.kind),
         }
@@ -133,6 +137,7 @@ impl Display for TokenType {
             Self::GtEq => write!(f, "GREATER_EQUAL >="),
             Self::LtEq => write!(f, "LESS_EQUAL <="),
             Self::Slash => write!(f, "SLASH /"),
+            Self::Literal(lit) => write!(f, "{}", lit),
             Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
             _ => write!(f, "Not implemented"),
         }?;
@@ -155,6 +160,16 @@ pub enum LiteralKind {
     String(LoxString),
 }
 
+impl Display for LiteralKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(num) => {}
+            Self::String(string) => write!(f, r#"STRING "{}" {}"#, string, string)?,
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct Number {
     value: String,
@@ -163,6 +178,22 @@ pub struct Number {
 #[derive(Debug)]
 pub struct LoxString {
     value: String,
+}
+
+impl Display for LoxString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)?;
+        Ok(())
+    }
+}
+
+impl FromStr for LoxString {
+    type Err = LexingError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            value: s.to_string(),
+        })
+    }
 }
 
 pub struct TokenStream {

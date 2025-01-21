@@ -1,12 +1,12 @@
-use std::str::Chars;
-
-use lexing_utils::{Token, TokenStream, TokenType};
+use anyhow::Result;
+use lexing_utils::{LiteralKind, LoxString, Token, TokenStream, TokenType};
+use std::str::{Chars, FromStr};
 use thiserror::Error;
 mod lexing_utils;
 
-pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
+pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
     let mut tokens = TokenStream::new();
-    let mut errors: Vec<LexingError> = Vec::new();
+    let mut errors: Vec<anyhow::Error> = Vec::new();
     let mut chars = data.chars().peekable();
     let mut line = 1;
     while let Some(next_char) = chars.next() {
@@ -19,16 +19,16 @@ pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
             '{' => tokens.push(Token::new(TokenType::OpenBrace, line)),
             '}' => tokens.push(Token::new(TokenType::CloseBrace, line)),
             '+' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("add assign".into())),
+                Some('=') => errors.push(LexingError::NotImplemented("add assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Plus, line)),
             },
             '-' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("sub assign".into())),
+                Some('=') => errors.push(LexingError::NotImplemented("sub assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Minus, line)),
             },
 
             '*' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("mul assign".into())),
+                Some('=') => errors.push(LexingError::NotImplemented("mul assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Star, line)),
             },
             ',' => tokens.push(Token::new(TokenType::Comma, line)),
@@ -75,11 +75,16 @@ pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
                 }
                 _ => tokens.push(Token::new(TokenType::Slash, line)),
             },
+            '\"' => match parse_string_lit(&mut chars, &mut line) {
+                Err(e) => errors.push(e),
+                Ok(s) => tokens.push(Token::new(
+                    TokenType::Literal(LiteralKind::String(LoxString::from_str(&s).unwrap())),
+                    line,
+                )),
+            },
             c if c.is_whitespace() => {}
-            _ => errors.push(LexingError::UnknownCharacter(
-                line,
-                TokenType::Unknown(next_char),
-            )),
+            _ => errors
+                .push(LexingError::UnknownCharacter(line, TokenType::Unknown(next_char)).into()),
         }
     }
     tokens.push(Token::new(TokenType::Eof, line));
@@ -119,10 +124,24 @@ fn parse_comment(
     comment
 }
 
+fn parse_string_lit(chars: &mut std::iter::Peekable<Chars>, line: &mut usize) -> Result<String> {
+    let mut str_lit = String::new();
+    for c in chars {
+        match c {
+            '\"' => return Ok(str_lit),
+            '\n' => *line += 1,
+            _ => str_lit.push(c),
+        }
+    }
+    Err(LexingError::UnterminatedSequence(*line, "string".into()))?
+}
+
 #[derive(Error, Debug)]
 pub enum LexingError {
     #[error("[line {0:?}] Error: Unexpected character: {1:?}")]
     UnknownCharacter(usize, TokenType),
     #[error("{0} not implemented")]
     NotImplemented(String),
+    #[error("[line {0:?}] Error: Unterminated {1}.")]
+    UnterminatedSequence(usize, String),
 }
