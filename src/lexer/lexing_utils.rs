@@ -92,6 +92,10 @@ pub enum TokenType {
     EqEq,
     /// '!='
     NEq,
+    /// '<='
+    LtEq,
+    /// '>='
+    GtEq,
     /// ' '
     WhiteSpace,
     /// Unknown token, not expected by the lexer, e.g. "№"
@@ -119,6 +123,10 @@ impl Display for TokenType {
             Self::Eq => write!(f, "EQUAL ="),
             Self::NEq => write!(f, "BANG_EQUAL !="),
             Self::Bang => write!(f, "BANG !"),
+            Self::Lt => write!(f, "LESS <"),
+            Self::Gt => write!(f, "GREATER >"),
+            Self::GtEq => write!(f, "GREATER_EQUAL >="),
+            Self::LtEq => write!(f, "LESS_EQUAL <="),
             _ => write!(f, "Not implemented"),
         }?;
         Ok(())

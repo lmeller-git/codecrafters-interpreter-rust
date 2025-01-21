@@ -46,6 +46,20 @@ pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
                 }
                 _ => tokens.push(Token::new(TokenType::Bang, line)),
             },
+            '>' => match chars.peek() {
+                Some('=') => {
+                    chars.next();
+                    tokens.push(Token::new(TokenType::GtEq, line))
+                }
+                _ => tokens.push(Token::new(TokenType::Gt, line)),
+            },
+            '<' => match chars.peek() {
+                Some('=') => {
+                    chars.next();
+                    tokens.push(Token::new(TokenType::LtEq, line))
+                }
+                _ => tokens.push(Token::new(TokenType::Lt, line)),
+            },
             c if c.is_whitespace() => {}
             _ => errors.push(LexingError::UnknownCharacter(
                 line,
