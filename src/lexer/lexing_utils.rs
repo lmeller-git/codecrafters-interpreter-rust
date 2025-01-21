@@ -88,6 +88,8 @@ impl Display for TokenType {
         match self {
             Self::OpenParen => write!(f, "LEFT_PAREN ("),
             Self::CloseParen => write!(f, "RIGHT_PAREN )"),
+            Self::OpenBrace => write!(f, "LEFT_BRACE {{"),
+            Self::CloseBrace => write!(f, "RIGHT_BRACE }}"),
             Self::Eof => write!(f, "EOF "),
             _ => write!(f, "Not implemented"),
         }?;
