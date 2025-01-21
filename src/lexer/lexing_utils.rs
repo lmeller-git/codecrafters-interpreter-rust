@@ -88,6 +88,9 @@ pub enum TokenType {
     Caret,
     /// `%`
     Percent,
+    /// '=='
+    EqEq,
+    /// ' '
     WhiteSpace,
     /// Unknown token, not expected by the lexer, e.g. "№"
     Unknown(char),
@@ -110,6 +113,8 @@ impl Display for TokenType {
             Self::Dot => write!(f, "DOT ."),
             Self::Comma => write!(f, "COMMA ,"),
             Self::Eof => write!(f, "EOF "),
+            Self::EqEq => write!(f, "EQUAL_EQUAL =="),
+            Self::Eq => write!(f, "EQUAL ="),
             _ => write!(f, "Not implemented"),
         }?;
         Ok(())
