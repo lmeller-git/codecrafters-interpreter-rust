@@ -1,9 +1,13 @@
 #![allow(dead_code)]
 
-use std::{fmt::Display, str::Chars, vec};
+use std::{
+    fmt::{Debug, Display},
+    vec,
+};
 
 pub const EOF_CHAR: char = '\0';
 
+#[derive(Debug)]
 pub struct Token {
     kind: TokenType,
     line: usize,
@@ -17,7 +21,14 @@ impl Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} null", self.kind)
+        match self.kind {
+            TokenType::Unknown(_) => write!(
+                f,
+                "[line {}] Error: UNexpected character: {:?}",
+                self.line, self.kind
+            ),
+            _ => write!(f, "{} null", self.kind),
+        }
     }
 }
 
@@ -79,7 +90,7 @@ pub enum TokenType {
     Percent,
     WhiteSpace,
     /// Unknown token, not expected by the lexer, e.g. "№"
-    Unknown,
+    Unknown(char),
     Eof,
 }
 
@@ -105,15 +116,27 @@ impl Display for TokenType {
     }
 }
 
+impl Debug for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Unknown(c) => write!(f, "{}", c),
+            _ => write!(f, "valid"),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum LiteralKind {
     Number(Number),
     String(LoxString),
 }
 
+#[derive(Debug)]
 pub struct Number {
     value: String,
 }
 
+#[derive(Debug)]
 pub struct LoxString {
     value: String,
 }

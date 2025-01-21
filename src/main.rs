@@ -27,8 +27,14 @@ fn main() -> Result<()> {
 
             // Uncomment this block to pass the first stage
             if !file_contents.is_empty() {
-                let token_stream = lexer::scan(&file_contents)?;
+                let (token_stream, errors) = lexer::scan(&file_contents);
                 println!("{}", token_stream);
+                if !errors.is_empty() {
+                    for e in errors {
+                        eprintln!("{}", e);
+                    }
+                    std::process::exit(65);
+                }
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
             }
