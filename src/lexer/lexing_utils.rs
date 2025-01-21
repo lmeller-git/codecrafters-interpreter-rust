@@ -90,6 +90,8 @@ pub enum TokenType {
     Percent,
     /// '=='
     EqEq,
+    /// '!='
+    NEq,
     /// ' '
     WhiteSpace,
     /// Unknown token, not expected by the lexer, e.g. "№"
@@ -115,6 +117,8 @@ impl Display for TokenType {
             Self::Eof => write!(f, "EOF "),
             Self::EqEq => write!(f, "EQUAL_EQUAL =="),
             Self::Eq => write!(f, "EQUAL ="),
+            Self::NEq => write!(f, "BANG_EQUAL !="),
+            Self::Bang => write!(f, "BANG !"),
             _ => write!(f, "Not implemented"),
         }?;
         Ok(())
