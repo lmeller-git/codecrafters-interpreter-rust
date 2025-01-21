@@ -1,12 +1,15 @@
+mod lexer;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
 
-fn main() {
+use anyhow::Result;
+
+fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         writeln!(io::stderr(), "Usage: {} tokenize <filename>", args[0]).unwrap();
-        return;
+        return Ok(());
     }
 
     let command = &args[1];
@@ -24,14 +27,16 @@ fn main() {
 
             // Uncomment this block to pass the first stage
             if !file_contents.is_empty() {
-                panic!("Scanner not implemented");
+                let token_stream = lexer::scan(&file_contents)?;
+                println!("{}", token_stream);
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
             }
         }
         _ => {
             writeln!(io::stderr(), "Unknown command: {}", command).unwrap();
-            return;
+            return Ok(());
         }
     }
+    Ok(())
 }
