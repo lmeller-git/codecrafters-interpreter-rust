@@ -137,6 +137,7 @@ impl Display for TokenType {
             Self::LtEq => write!(f, "LESS_EQUAL <="),
             Self::Slash => write!(f, "SLASH /"),
             Self::Ident(id) => write!(f, "IDENTIFIER {}", id),
+            Self::Keyword(key) => write!(f, "{}", key),
             Self::Literal(lit) => write!(f, "{}", lit),
             Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
             _ => write!(f, "Not implemented"),
@@ -190,6 +191,28 @@ pub enum Keyword {
     While,
 }
 
+impl Display for Keyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Keyword::And => write!(f, "AND and"),
+            Keyword::Class => write!(f, "CLASS class"),
+            Keyword::Else => write!(f, "ELSE else"),
+            Keyword::False => write!(f, "FALSE false"),
+            Keyword::For => write!(f, "FOR for"),
+            Keyword::Fun => write!(f, "FUN fun"),
+            Keyword::If => write!(f, "IF if"),
+            Keyword::Nil => write!(f, "NIL nil"),
+            Keyword::Or => write!(f, "OR or"),
+            Keyword::Print => write!(f, "PRINT print"),
+            Keyword::Return => write!(f, "RETURN return"),
+            Keyword::Super => write!(f, "SUPER super"),
+            Keyword::This => write!(f, "THIS this"),
+            Keyword::True => write!(f, "TRUE true"),
+            Keyword::Var => write!(f, "VAR var"),
+            Keyword::While => write!(f, "WHILE while"),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum LiteralKind {
     Number(Number, String),
