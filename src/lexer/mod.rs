@@ -16,6 +16,22 @@ pub fn scan(data: &str) -> Result<TokenStream> {
             ']' => tokens.push(Token::new(TokenType::CloseBracket, line)),
             '{' => tokens.push(Token::new(TokenType::OpenBrace, line)),
             '}' => tokens.push(Token::new(TokenType::CloseBrace, line)),
+            '+' => match chars.peek() {
+                Some('=') => bail!("did not implement plus assign"),
+                _ => tokens.push(Token::new(TokenType::Plus, line)),
+            },
+            '-' => match chars.peek() {
+                Some('=') => bail!("did not implement sub assign"),
+                _ => tokens.push(Token::new(TokenType::Minus, line)),
+            },
+
+            '*' => match chars.peek() {
+                Some('=') => bail!("did not implement mul assign"),
+                _ => tokens.push(Token::new(TokenType::Star, line)),
+            },
+            ',' => tokens.push(Token::new(TokenType::Comma, line)),
+            '.' => tokens.push(Token::new(TokenType::Dot, line)),
+            ';' => tokens.push(Token::new(TokenType::Semi, line)),
             c if c.is_whitespace() => {}
             _ => bail!("unexpected char {}", next_char),
         }
