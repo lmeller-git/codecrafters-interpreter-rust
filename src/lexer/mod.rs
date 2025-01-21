@@ -1,11 +1,32 @@
 use crate::core::types::{LoxString, Number};
 use anyhow::Result;
-use lexing_utils::{LiteralKind, Token, TokenStream, TokenType};
-use std::str::{Chars, FromStr};
+use lexing_utils::{Keyword, LiteralKind, Token, TokenStream, TokenType};
+use std::{
+    collections::HashMap,
+    str::{Chars, FromStr},
+};
 use thiserror::Error;
 mod lexing_utils;
 
 pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
+    let keywords: HashMap<String, Keyword> = HashMap::from([
+        ("and".to_string(), Keyword::And),
+        ("class".to_string(), Keyword::Class),
+        ("else".to_string(), Keyword::Else),
+        ("false".to_string(), Keyword::False),
+        ("for".to_string(), Keyword::For),
+        ("fun".to_string(), Keyword::Fun),
+        ("if".to_string(), Keyword::If),
+        ("nil".to_string(), Keyword::Nil),
+        ("or".to_string(), Keyword::Or),
+        ("print".to_string(), Keyword::Print),
+        ("return".to_string(), Keyword::Return),
+        ("super".to_string(), Keyword::Super),
+        ("this".to_string(), Keyword::This),
+        ("true".to_string(), Keyword::True),
+        ("var".to_string(), Keyword::Var),
+        ("while".to_string(), Keyword::While),
+    ]);
     let mut tokens = TokenStream::new();
     let mut errors: Vec<anyhow::Error> = Vec::new();
     let mut chars = data.chars().peekable();
@@ -88,6 +109,10 @@ pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
                     line,
                 )),
             },
+            c if c.is_alphanumeric() || c == '_' => match parse_ident(&mut chars, c, &keywords) {
+                Err(e) => errors.push(e),
+                Ok(t) => tokens.push(Token::new(t, line)),
+            },
             _ => errors
                 .push(LexingError::UnknownCharacter(line, TokenType::Unknown(next_char)).into()),
         }
@@ -162,6 +187,25 @@ fn parse_num(chars: &mut std::iter::Peekable<Chars>, first: char) -> Result<(Num
         }
     }
     Ok((Number::from_str(&acc)?, acc))
+}
+
+fn parse_ident(
+    chars: &mut std::iter::Peekable<Chars>,
+    first: char,
+    keywords: &HashMap<String, Keyword>,
+) -> Result<TokenType> {
+    let mut acc = String::new();
+    acc.push(first);
+    while let Some(next) = chars.peek() {
+        match next {
+            c if c.is_alphanumeric() || *c == '_' => acc.push(chars.next().unwrap()),
+            _ => break,
+        }
+    }
+    if let Some(keyword) = keywords.get(&acc) {
+        return Ok(TokenType::Keyword(*keyword));
+    }
+    Ok(TokenType::Ident(acc))
 }
 
 #[derive(Error, Debug)]

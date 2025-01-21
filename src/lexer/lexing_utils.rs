@@ -36,7 +36,7 @@ impl Display for Token {
 }
 
 pub enum TokenType {
-    Ident,
+    Ident(String),
     Literal(LiteralKind),
     Semi,
     /// `,`
@@ -105,6 +105,7 @@ pub enum TokenType {
     GtEq,
     /// ' '
     WhiteSpace,
+    Keyword(Keyword),
     /// Unknown token, not expected by the lexer, e.g. "№"
     Unknown(char),
     Eof,
@@ -135,6 +136,7 @@ impl Display for TokenType {
             Self::GtEq => write!(f, "GREATER_EQUAL >="),
             Self::LtEq => write!(f, "LESS_EQUAL <="),
             Self::Slash => write!(f, "SLASH /"),
+            Self::Ident(id) => write!(f, "IDENTIFIER {}", id),
             Self::Literal(lit) => write!(f, "{}", lit),
             Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
             _ => write!(f, "Not implemented"),
@@ -150,6 +152,42 @@ impl Debug for TokenType {
             _ => write!(f, "valid"),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Keyword {
+    /// 'and'
+    And,
+    /// 'class'
+    Class,
+    /// 'else'
+    Else,
+    /// 'false'
+    False,
+    /// 'for'
+    For,
+    /// 'fun'
+    Fun,
+    /// 'if'
+    If,
+    /// 'nil'
+    Nil,
+    /// 'or'
+    Or,
+    /// 'print'
+    Print,
+    /// 'return'
+    Return,
+    /// 'super'
+    Super,
+    /// 'this'
+    This,
+    /// 'true'
+    True,
+    /// 'var'
+    Var,
+    /// 'while'
+    While,
 }
 
 #[derive(Debug)]
