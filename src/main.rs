@@ -1,3 +1,4 @@
+mod core;
 mod lexer;
 use std::env;
 use std::fs;

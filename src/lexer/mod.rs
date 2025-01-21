@@ -1,5 +1,6 @@
+use crate::core::types::{LoxString, Number};
 use anyhow::Result;
-use lexing_utils::{LiteralKind, LoxString, Token, TokenStream, TokenType};
+use lexing_utils::{LiteralKind, Token, TokenStream, TokenType};
 use std::str::{Chars, FromStr};
 use thiserror::Error;
 mod lexing_utils;
@@ -77,12 +78,16 @@ pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
             },
             '\"' => match parse_string_lit(&mut chars, &mut line) {
                 Err(e) => errors.push(e),
-                Ok(s) => tokens.push(Token::new(
-                    TokenType::Literal(LiteralKind::String(LoxString::from_str(&s).unwrap())),
+                Ok(s) => tokens.push(Token::new(TokenType::Literal(LiteralKind::String(s)), line)),
+            },
+            c if c.is_whitespace() => {}
+            c if c.is_ascii_digit() => match parse_num(&mut chars, c) {
+                Err(e) => errors.push(e),
+                Ok((n, s)) => tokens.push(Token::new(
+                    TokenType::Literal(LiteralKind::Number(n, s)),
                     line,
                 )),
             },
-            c if c.is_whitespace() => {}
             _ => errors
                 .push(LexingError::UnknownCharacter(line, TokenType::Unknown(next_char)).into()),
         }
@@ -124,16 +129,39 @@ fn parse_comment(
     comment
 }
 
-fn parse_string_lit(chars: &mut std::iter::Peekable<Chars>, line: &mut usize) -> Result<String> {
+fn parse_string_lit(chars: &mut std::iter::Peekable<Chars>, line: &mut usize) -> Result<LoxString> {
     let mut str_lit = String::new();
     for c in chars {
         match c {
-            '\"' => return Ok(str_lit),
+            '\"' => return Ok(LoxString::from_str(&str_lit)?),
             '\n' => *line += 1,
             _ => str_lit.push(c),
         }
     }
     Err(LexingError::UnterminatedSequence(*line, "string".into()))?
+}
+
+fn parse_num(chars: &mut std::iter::Peekable<Chars>, first: char) -> Result<(Number, String)> {
+    let mut acc = String::new();
+    acc.push(first);
+    while let Some(next) = chars.peek() {
+        match next {
+            '.' => {
+                let mut peekable = chars.clone();
+                peekable.next();
+                match peekable.peek() {
+                    Some(c) if c.is_ascii_digit() => {
+                        acc.push(chars.next().unwrap());
+                        acc.push(chars.next().unwrap());
+                    }
+                    _ => return Ok((Number::from_str(&acc)?, acc)),
+                }
+            }
+            c if c.is_ascii_digit() => acc.push(chars.next().unwrap()),
+            _ => return Ok((Number::from_str(&acc)?, acc)),
+        }
+    }
+    Ok((Number::from_str(&acc)?, acc))
 }
 
 #[derive(Error, Debug)]

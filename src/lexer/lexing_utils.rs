@@ -1,12 +1,10 @@
 #![allow(dead_code)]
+use crate::core::types::{LoxString, Number};
 
 use std::{
     fmt::{Debug, Display},
-    str::FromStr,
     vec,
 };
-
-use super::LexingError;
 
 pub const EOF_CHAR: char = '\0';
 
@@ -156,43 +154,17 @@ impl Debug for TokenType {
 
 #[derive(Debug)]
 pub enum LiteralKind {
-    Number(Number),
+    Number(Number, String),
     String(LoxString),
 }
 
 impl Display for LiteralKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Number(num) => {}
+            Self::Number(num, s) => write!(f, r#"NUMBER {} {}"#, s, num.as_floating_point_str())?,
             Self::String(string) => write!(f, r#"STRING "{}" {}"#, string, string)?,
         }
         Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct Number {
-    value: String,
-}
-
-#[derive(Debug)]
-pub struct LoxString {
-    value: String,
-}
-
-impl Display for LoxString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)?;
-        Ok(())
-    }
-}
-
-impl FromStr for LoxString {
-    type Err = LexingError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            value: s.to_string(),
-        })
     }
 }
 
