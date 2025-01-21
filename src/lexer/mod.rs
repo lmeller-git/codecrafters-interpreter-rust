@@ -1,3 +1,5 @@
+use std::str::Chars;
+
 use lexing_utils::{Token, TokenStream, TokenType};
 use thiserror::Error;
 mod lexing_utils;
@@ -60,6 +62,19 @@ pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
                 }
                 _ => tokens.push(Token::new(TokenType::Lt, line)),
             },
+            '/' => match chars.peek() {
+                Some('/') => {
+                    chars.next();
+                    let comment = parse_comment(&mut chars, false, &mut line);
+                    tokens.push(Token::new(TokenType::SingleLineComment(comment), line))
+                }
+                Some('*') => {
+                    chars.next();
+                    let comment = parse_comment(&mut chars, true, &mut line);
+                    tokens.push(Token::new(TokenType::MultiLineComment(comment), line))
+                }
+                _ => tokens.push(Token::new(TokenType::Slash, line)),
+            },
             c if c.is_whitespace() => {}
             _ => errors.push(LexingError::UnknownCharacter(
                 line,
@@ -69,6 +84,39 @@ pub fn scan(data: &str) -> (TokenStream, Vec<LexingError>) {
     }
     tokens.push(Token::new(TokenType::Eof, line));
     (tokens, errors)
+}
+
+fn parse_comment(
+    chars: &mut std::iter::Peekable<Chars>,
+    is_multiline: bool,
+    line: &mut usize,
+) -> String {
+    let mut comment = String::new();
+    while let Some(c) = chars.next() {
+        match c {
+            '\n' => {
+                *line += 1;
+                if !is_multiline {
+                    return comment;
+                }
+                comment.push('\n');
+            }
+            '*' => {
+                if is_multiline {
+                    if let Some(n) = chars.next() {
+                        if n == '/' {
+                            return comment;
+                        }
+                        comment.push(n);
+                    }
+                } else {
+                    comment.push(c);
+                }
+            }
+            _ => comment.push(c),
+        }
+    }
+    comment
 }
 
 #[derive(Error, Debug)]

@@ -27,6 +27,7 @@ impl Display for Token {
                 "[line {}] Error: UNexpected character: {:?}",
                 self.line, self.kind
             ),
+            TokenType::SingleLineComment(_) | TokenType::MultiLineComment(_) => Ok(()),
             _ => write!(f, "{} null", self.kind),
         }
     }
@@ -52,6 +53,10 @@ pub enum TokenType {
     OpenBracket,
     /// `]`
     CloseBracket,
+    /// '//'
+    SingleLineComment(String),
+    /// '/**/'
+    MultiLineComment(String),
     /// `@`
     At,
     /// `#`
@@ -127,6 +132,8 @@ impl Display for TokenType {
             Self::Gt => write!(f, "GREATER >"),
             Self::GtEq => write!(f, "GREATER_EQUAL >="),
             Self::LtEq => write!(f, "LESS_EQUAL <="),
+            Self::Slash => write!(f, "SLASH /"),
+            Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
             _ => write!(f, "Not implemented"),
         }?;
         Ok(())
@@ -183,7 +190,10 @@ impl TokenStream {
 impl Display for TokenStream {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for token in &self.tokens {
-            writeln!(f, "{}", token)?;
+            let format = format!("{}", token);
+            if !format.is_empty() {
+                writeln!(f, "{}", format)?;
+            }
         }
         Ok(())
     }
