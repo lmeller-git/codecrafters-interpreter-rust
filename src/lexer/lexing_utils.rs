@@ -162,6 +162,12 @@ impl Debug for TokenType {
             Self::Star => write!(f, "*"),
             Self::Slash => write!(f, "/"),
             Self::Plus => write!(f, "+"),
+            Self::Gt => write!(f, ">"),
+            Self::GtEq => write!(f, ">="),
+            Self::Lt => write!(f, "<"),
+            Self::LtEq => write!(f, "<="),
+            Self::EqEq => write!(f, "=="),
+            Self::NEq => write!(f, "!="),
             _ => write!(f, "valid"),
         }
     }
