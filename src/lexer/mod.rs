@@ -41,16 +41,16 @@ pub fn scan(data: &str) -> (TokenStream<std::vec::IntoIter<Token>>, Vec<anyhow::
             '{' => tokens.push(Token::new(TokenType::OpenBrace, line)),
             '}' => tokens.push(Token::new(TokenType::CloseBrace, line)),
             '+' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("add assign".into()).into()),
+                Some('=') => {} // errors.push(LexingError::NotImplemented("add assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Plus, line)),
             },
             '-' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("sub assign".into()).into()),
+                Some('=') => {} //errors.push(LexingError::NotImplemented("sub assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Minus, line)),
             },
 
             '*' => match chars.peek() {
-                Some('=') => errors.push(LexingError::NotImplemented("mul assign".into()).into()),
+                Some('=') => {} // errors.push(LexingError::NotImplemented("mul assign".into()).into()),
                 _ => tokens.push(Token::new(TokenType::Star, line)),
             },
             ',' => tokens.push(Token::new(TokenType::Comma, line)),
