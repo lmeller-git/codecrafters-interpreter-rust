@@ -4,7 +4,7 @@ use super::{
     expr::{Comparison, Equality, Expr, Factor, Primary, Term, Unary},
     ParseError, Parser,
 };
-use crate::lexer::lexing_utils::{Token, TokenStream, TokenType};
+use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
 
 #[derive(Default)]
@@ -39,7 +39,10 @@ impl<T: Iterator<Item = Token>> Parser<T> {
             }
             match self.parse_one() {
                 Ok(expr) => ast.exprs.push(expr),
-                Err(e) => errors.push(e),
+                Err(e) => {
+                    errors.push(e);
+                    self.sync();
+                }
             }
         }
         Ok((errors, ast))
@@ -47,7 +50,30 @@ impl<T: Iterator<Item = Token>> Parser<T> {
     fn parse_expr(&mut self) -> Result<Expr> {
         Expr::try_parse(&mut self.tokens)
     }
-    fn sync(&mut self) {}
+    fn sync(&mut self) {
+        while let Some(token) = self.tokens.peek() {
+            match token.kind {
+                TokenType::Semi => {
+                    self.tokens.next();
+                    break;
+                }
+                TokenType::Keyword(
+                    Keyword::Class
+                    | Keyword::For
+                    | Keyword::If
+                    | Keyword::Fun
+                    | Keyword::Print
+                    | Keyword::Return
+                    | Keyword::While
+                    | Keyword::Var,
+                ) => {
+                    break;
+                }
+                TokenType::Eof => break,
+                _ => _ = self.tokens.next(),
+            }
+        }
+    }
 }
 
 pub trait Visitable<V: Visitor>: Sized {

@@ -15,6 +15,10 @@ impl Token {
     pub fn new(kind: TokenType, line: usize) -> Self {
         Self { kind, line }
     }
+    pub fn line(&self) -> usize {
+        let Self { kind: _, line } = self;
+        *line
+    }
 }
 
 impl Display for Token {
@@ -168,6 +172,8 @@ impl Debug for TokenType {
             Self::LtEq => write!(f, "<="),
             Self::EqEq => write!(f, "=="),
             Self::NEq => write!(f, "!="),
+            Self::OpenParen => write!(f, "("),
+            Self::CloseParen => write!(f, ")"),
             _ => write!(f, "valid"),
         }
     }

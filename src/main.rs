@@ -55,10 +55,19 @@ fn main() -> Result<()> {
                 std::process::exit(65);
             }
             match Parser::new(tokens).parse_all() {
-                Ok((e, ast)) => {
+                Ok((errors, ast)) => {
                     println!("{}", ast);
+                    for e in &errors {
+                        eprintln!("{}", e);
+                    }
+                    if !errors.is_empty() {
+                        std::process::exit(65);
+                    }
                 }
-                Err(e) => {}
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(65);
+                }
             }
         }
         _ => {
