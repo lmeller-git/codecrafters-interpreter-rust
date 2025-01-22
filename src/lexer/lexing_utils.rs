@@ -156,6 +156,7 @@ impl Debug for TokenType {
         match self {
             Self::Unknown(c) => write!(f, "{}", c),
             Self::Keyword(key) => write!(f, "{}", key),
+            Self::Literal(lit) => write!(f, "{:?}", lit),
             _ => write!(f, "valid"),
         }
     }
@@ -244,17 +245,28 @@ impl Display for Keyword {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum LiteralKind {
     Number(Number, String),
     String(LoxString),
 }
 
+//TODO swap Display and Debug
 impl Display for LiteralKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(num, s) => write!(f, r#"NUMBER {} {}"#, s, num.as_floating_point_str())?,
             Self::String(string) => write!(f, r#"STRING "{}" {}"#, string, string)?,
+        }
+        Ok(())
+    }
+}
+
+impl Debug for LiteralKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(num, _) => write!(f, "{}", num.as_floating_point_str())?,
+            Self::String(s) => write!(f, "{}", s)?,
         }
         Ok(())
     }

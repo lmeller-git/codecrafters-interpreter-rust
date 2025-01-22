@@ -100,7 +100,7 @@ impl Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.value {
             NumericValue::Float(num) => write!(f, "{}", num)?,
-            NumericValue::Int(_num) => write!(f, "{}", self.as_floating_point_str())?,
+            NumericValue::Int(num) => write!(f, "{}", num)?,
         }
         Ok(())
     }
