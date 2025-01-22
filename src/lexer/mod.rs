@@ -6,9 +6,9 @@ use std::{
     str::{Chars, FromStr},
 };
 use thiserror::Error;
-mod lexing_utils;
+pub mod lexing_utils;
 
-pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
+pub fn scan(data: &str) -> (TokenStream<std::vec::IntoIter<Token>>, Vec<anyhow::Error>) {
     let keywords: HashMap<String, Keyword> = HashMap::from([
         ("and".to_string(), Keyword::And),
         ("class".to_string(), Keyword::Class),
@@ -27,7 +27,7 @@ pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
         ("var".to_string(), Keyword::Var),
         ("while".to_string(), Keyword::While),
     ]);
-    let mut tokens = TokenStream::new();
+    let mut tokens = Vec::new();
     let mut errors: Vec<anyhow::Error> = Vec::new();
     let mut chars = data.chars().peekable();
     let mut line = 1;
@@ -118,6 +118,7 @@ pub fn scan(data: &str) -> (TokenStream, Vec<anyhow::Error>) {
         }
     }
     tokens.push(Token::new(TokenType::Eof, line));
+    let tokens = TokenStream::new(tokens.into_iter());
     (tokens, errors)
 }
 

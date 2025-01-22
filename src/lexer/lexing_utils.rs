@@ -1,16 +1,13 @@
 #![allow(dead_code)]
 use crate::core::types::{LoxString, Number};
 
-use std::{
-    fmt::{Debug, Display},
-    vec,
-};
+use std::fmt::{Debug, Display};
 
 pub const EOF_CHAR: char = '\0';
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Default)]
 pub struct Token {
-    kind: TokenType,
+    pub kind: TokenType,
     line: usize,
 }
 
@@ -35,6 +32,7 @@ impl Display for Token {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub enum TokenType {
     Ident(String),
     Literal(LiteralKind),
@@ -111,6 +109,13 @@ pub enum TokenType {
     Eof,
 }
 
+impl Default for TokenType {
+    fn default() -> Self {
+        Self::Keyword(Keyword::default())
+    }
+}
+
+//TODO swap Debug and Display
 impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -137,7 +142,7 @@ impl Display for TokenType {
             Self::LtEq => write!(f, "LESS_EQUAL <="),
             Self::Slash => write!(f, "SLASH /"),
             Self::Ident(id) => write!(f, "IDENTIFIER {}", id),
-            Self::Keyword(key) => write!(f, "{}", key),
+            Self::Keyword(key) => write!(f, "{:?}", key),
             Self::Literal(lit) => write!(f, "{}", lit),
             Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
             _ => write!(f, "Not implemented"),
@@ -150,12 +155,13 @@ impl Debug for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Unknown(c) => write!(f, "{}", c),
+            Self::Keyword(key) => write!(f, "{}", key),
             _ => write!(f, "valid"),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum Keyword {
     /// 'and'
     And,
@@ -172,6 +178,7 @@ pub enum Keyword {
     /// 'if'
     If,
     /// 'nil'
+    #[default]
     Nil,
     /// 'or'
     Or,
@@ -191,7 +198,7 @@ pub enum Keyword {
     While,
 }
 
-impl Display for Keyword {
+impl Debug for Keyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Keyword::And => write!(f, "AND and"),
@@ -213,7 +220,31 @@ impl Display for Keyword {
         }
     }
 }
-#[derive(Debug)]
+
+impl Display for Keyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Keyword::And => write!(f, "and"),
+            Keyword::Class => write!(f, "class"),
+            Keyword::Else => write!(f, "else"),
+            Keyword::False => write!(f, "false"),
+            Keyword::For => write!(f, "for"),
+            Keyword::Fun => write!(f, "fun"),
+            Keyword::If => write!(f, "if"),
+            Keyword::Nil => write!(f, "nil"),
+            Keyword::Or => write!(f, "or"),
+            Keyword::Print => write!(f, "print"),
+            Keyword::Return => write!(f, "return"),
+            Keyword::Super => write!(f, "super"),
+            Keyword::This => write!(f, "this"),
+            Keyword::True => write!(f, "true"),
+            Keyword::Var => write!(f, "var"),
+            Keyword::While => write!(f, "while"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LiteralKind {
     Number(Number, String),
     String(LoxString),
@@ -229,31 +260,31 @@ impl Display for LiteralKind {
     }
 }
 
-pub struct TokenStream {
-    tokens: Vec<Token>,
+// wrapper around an Iterator over Tokens
+#[derive(Clone, Debug, Default)]
+pub struct TokenStream<T: Iterator<Item = Token>> {
+    tokens: T,
 }
 
-impl IntoIterator for TokenStream {
+impl<T: Iterator<Item = Token>> TokenStream<T> {
+    pub fn new(tokens: T) -> Self {
+        Self { tokens }
+    }
+}
+
+impl<T: Iterator<Item = Token>> Iterator for TokenStream<T> {
     type Item = Token;
-    type IntoIter = vec::IntoIter<Token>;
-    fn into_iter(self) -> Self::IntoIter {
-        self.tokens.into_iter()
+    fn next(&mut self) -> Option<Self::Item> {
+        self.tokens.next()
     }
 }
 
-impl TokenStream {
-    pub fn new() -> Self {
-        Self { tokens: Vec::new() }
-    }
-
-    pub fn push(&mut self, token: Token) {
-        self.tokens.push(token)
-    }
-}
-
-impl Display for TokenStream {
+impl<T: Iterator<Item = Token>> Display for TokenStream<T>
+where
+    T: Clone,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for token in &self.tokens {
+        for token in self.tokens.clone() {
             let format = format!("{}", token);
             if !format.is_empty() {
                 writeln!(f, "{}", format)?;
@@ -262,25 +293,3 @@ impl Display for TokenStream {
         Ok(())
     }
 }
-
-/*
-pub struct Cursor<'a> {
-    chars: Chars<'a>,
-}
-
-impl<'a> Cursor<'a> {
-    pub fn new(source: &'a str) -> Self {
-        Self {
-            chars: source.chars(),
-        }
-    }
-
-    pub fn peek_nth(&self, n: usize) -> char {
-        let mut chars = self.chars.clone();
-        chars.nth(n).unwrap_or(EOF_CHAR)
-    }
-
-    pub fn next() {}
-
-}
-*/

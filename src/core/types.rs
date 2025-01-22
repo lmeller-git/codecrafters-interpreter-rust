@@ -7,11 +7,24 @@ use std::{
 
 use anyhow::Context;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum NumericValue {
     Float(f64),
     Int(i64),
 }
+
+impl PartialEq for NumericValue {
+    fn eq(&self, other: &Self) -> bool {
+        //TODO implement float, int cmp
+        match (self, other) {
+            (Self::Int(i), Self::Int(i2)) => i == i2,
+            (Self::Float(i), Self::Float(i2)) => i == i2 && !i.is_nan() && !i2.is_nan(),
+            _ => false,
+        }
+    }
+}
+
+impl Eq for NumericValue {}
 
 impl NumericValue {
     fn inner<T: FromNumericValue>(&self) -> T {
@@ -51,7 +64,7 @@ impl FromNumericValue for i64 {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Number {
     value: NumericValue,
 }
@@ -71,12 +84,23 @@ impl FromStr for Number {
         Ok(Self { value: num })
     }
 }
+impl From<f64> for NumericValue {
+    fn from(value: f64) -> Self {
+        NumericValue::Float(value)
+    }
+}
+
+impl From<i64> for NumericValue {
+    fn from(value: i64) -> Self {
+        NumericValue::Int(value)
+    }
+}
 
 impl Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.value {
             NumericValue::Float(num) => write!(f, "{}", num)?,
-            NumericValue::Int(num) => write!(f, "{}", num)?,
+            NumericValue::Int(_num) => write!(f, "{}", self.as_floating_point_str())?,
         }
         Ok(())
     }
@@ -107,9 +131,18 @@ impl Number {
             NumericValue::Int(num) => format!("{:.1}", num as f64),
         }
     }
+
+    pub fn new<T>(value: T) -> Self
+    where
+        T: Into<NumericValue>,
+    {
+        Number {
+            value: value.into(),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LoxString {
     value: String,
 }

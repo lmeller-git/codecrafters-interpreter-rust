@@ -1,10 +1,12 @@
 mod core;
 mod lexer;
+mod parse;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
 
 use anyhow::Result;
+use parse::Parser;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -38,6 +40,25 @@ fn main() -> Result<()> {
                 }
             } else {
                 println!("EOF  null"); // Placeholder, remove this line when implementing the scanner
+            }
+        }
+        "parse" => {
+            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
+                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
+                String::new()
+            });
+            let (tokens, errors) = lexer::scan(&file_contents);
+            if !errors.is_empty() {
+                for e in errors {
+                    eprintln!("{}", e);
+                }
+                std::process::exit(65);
+            }
+            match Parser::new(tokens).parse_all() {
+                Ok((e, ast)) => {
+                    println!("{}", ast);
+                }
+                Err(e) => {}
             }
         }
         _ => {
