@@ -1,17 +1,15 @@
 mod core;
 mod lexer;
 mod parse;
-use std::env;
-use std::fs;
-use std::io::{self, Write};
-
 use anyhow::Result;
 use parse::Parser;
+use std::env;
+use std::fs;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        writeln!(io::stderr(), "Usage: {} tokenize <filename>", args[0]).unwrap();
+        eprintln!("Usage: {} tokenize <filename>", args[0]);
         return Ok(());
     }
 
@@ -21,10 +19,10 @@ fn main() -> Result<()> {
     match command.as_str() {
         "tokenize" => {
             // You can use print statements as follows for debugging, they'll be visible when running tests.
-            writeln!(io::stderr(), "Logs from your program will appear here!").unwrap();
+            eprintln!("Logs from your program will appear here!");
 
             let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
-                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
+                eprintln!("Failed to read file {}", filename);
                 String::new()
             });
 
@@ -44,7 +42,7 @@ fn main() -> Result<()> {
         }
         "parse" => {
             let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
-                writeln!(io::stderr(), "Failed to read file {}", filename).unwrap();
+                eprintln!("Failed to read file {}", filename);
                 String::new()
             });
             let (tokens, errors) = lexer::scan(&file_contents);
@@ -71,7 +69,7 @@ fn main() -> Result<()> {
             }
         }
         _ => {
-            writeln!(io::stderr(), "Unknown command: {}", command).unwrap();
+            eprintln!("Unknown command: {}", command);
             return Ok(());
         }
     }

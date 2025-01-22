@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, private_bounds)]
 use std::{
     convert::Infallible,
     fmt::{Debug, Display},

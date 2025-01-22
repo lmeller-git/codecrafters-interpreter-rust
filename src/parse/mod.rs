@@ -3,8 +3,6 @@ pub mod expr;
 use std::fmt::Display;
 
 use crate::lexer::lexing_utils::{Token, TokenStream};
-use anyhow::Result;
-use thiserror::Error;
 
 // takes a TokenStream and parses it into an AST via recursive descent
 pub struct Parser<T: Iterator<Item = Token>> {

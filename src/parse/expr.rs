@@ -49,7 +49,7 @@ pub enum Primary {
 
 impl Default for Unary {
     fn default() -> Self {
-        Self::Primary(Box::new(Primary::default()))
+        Self::Primary(Box::default())
     }
 }
 

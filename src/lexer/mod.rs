@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::core::types::{LoxString, Number};
 use anyhow::Result;
 use lexing_utils::{Keyword, LiteralKind, Token, TokenStream, TokenType};

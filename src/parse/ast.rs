@@ -1,8 +1,9 @@
+#![allow(dead_code)]
 use std::fmt::Display;
 
 use super::{
     expr::{Comparison, Equality, Expr, Factor, Primary, Term, Unary},
-    ParseError, Parser,
+    Parser,
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
