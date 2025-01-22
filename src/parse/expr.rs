@@ -101,7 +101,7 @@ impl Display for Term {
 impl Display for Factor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some((op, eq)) = &self.lhs {
-            write!(f, "{1} {0} {2}", eq, op, self.rhs)?;
+            write!(f, "({1:?} {0} {2})", eq, op.kind, self.rhs)?;
         } else {
             write!(f, "{}", self.rhs)?;
         }
@@ -256,7 +256,7 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Factor {
         let mut expr = Self { rhs, lhs };
         while let Some(next) = stream.peek() {
             match next.kind {
-                TokenType::Plus | TokenType::Minus => {
+                TokenType::Star | TokenType::Slash => {
                     //TODO check if correct
                     let op = stream.next().unwrap();
                     //TODO maybe handle error by using None instead (and returning error alongside the parsed eq)

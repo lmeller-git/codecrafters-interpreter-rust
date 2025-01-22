@@ -159,6 +159,8 @@ impl Debug for TokenType {
             Self::Literal(lit) => write!(f, "{:?}", lit),
             Self::Bang => write!(f, "!"),
             Self::Minus => write!(f, "-"),
+            Self::Star => write!(f, "*"),
+            Self::Slash => write!(f, "/"),
             _ => write!(f, "valid"),
         }
     }
