@@ -123,7 +123,7 @@ impl Display for Primary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Token(token) => write!(f, "{:?}", token.kind)?,
-            Self::Grouping(expr) => write!(f, "({})", expr)?,
+            Self::Grouping(expr) => write!(f, "(group {})", expr)?,
         }
         Ok(())
     }
@@ -309,6 +309,7 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Primary {
                     } else {
                         return Err(ParseError::UnexpectedNone.into());
                     }
+                    stream.next();
                     Ok(Self::Grouping(expr))
                 }
                 _ => Err(ParseError::InvalidToken(token.clone()).into()),
