@@ -90,7 +90,7 @@ impl Display for Comparison {
 impl Display for Term {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some((op, eq)) = &self.lhs {
-            write!(f, "{1} {0} {2}", eq, op, self.rhs)?;
+            write!(f, "({1:?} {0} {2})", eq, op.kind, self.rhs)?;
         } else {
             write!(f, "{}", self.rhs)?;
         }

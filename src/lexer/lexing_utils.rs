@@ -161,6 +161,7 @@ impl Debug for TokenType {
             Self::Minus => write!(f, "-"),
             Self::Star => write!(f, "*"),
             Self::Slash => write!(f, "/"),
+            Self::Plus => write!(f, "+"),
             _ => write!(f, "valid"),
         }
     }
