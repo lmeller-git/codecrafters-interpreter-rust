@@ -112,7 +112,7 @@ impl Display for Factor {
 impl Display for Unary {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unary(op, unary) => write!(f, "{} {}", op, unary)?,
+            Self::Unary(op, unary) => write!(f, "({:?} {})", op.kind, unary)?,
             Self::Primary(primary) => write!(f, "{}", primary)?,
         }
         Ok(())

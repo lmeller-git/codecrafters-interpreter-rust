@@ -157,6 +157,8 @@ impl Debug for TokenType {
             Self::Unknown(c) => write!(f, "{}", c),
             Self::Keyword(key) => write!(f, "{}", key),
             Self::Literal(lit) => write!(f, "{:?}", lit),
+            Self::Bang => write!(f, "!"),
+            Self::Minus => write!(f, "-"),
             _ => write!(f, "valid"),
         }
     }
