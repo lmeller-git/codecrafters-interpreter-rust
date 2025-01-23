@@ -1,18 +1,16 @@
 pub mod tree_walk;
 use anyhow::Result;
 use thiserror::Error;
-use tree_walk::TreeWalker;
 mod ops;
 use crate::{
     core::types::LoxType,
     lexer::lexing_utils::TokenType,
     parse::{
         ast::{Ast, Visitor},
-        expr::Expr,
         stmt::Stmt,
     },
 };
-//TODO refactor parser and evaluator to use a BinaryOp enum instead of Token!!!!
+//TODO refactor parser and evaluator to use some kind of BinaryOp/UnaryOp enum instead of Token!!!!
 pub struct Interpreter<T>
 where
     T: Evaluator,
@@ -31,7 +29,11 @@ where
         for stmt in &self.ast.prog {
             match self.evaluator.evaluate(stmt) {
                 Ok(r) => res.push(r),
-                Err(e) => errs.push(e),
+                Err(e) => {
+                    errs.push(e);
+                    // ???????????
+                    return Ok((res, errs));
+                }
             }
         }
         Ok((res, errs))

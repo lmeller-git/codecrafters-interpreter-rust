@@ -42,11 +42,25 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Stmt {
                         Ok(Self::Print(PrintStmt::try_parse(stream)?))
                     }
                     Keyword::False | Keyword::Nil | Keyword::True => {
-                        Ok(Self::Expr(Expr::try_parse(stream)?))
+                        let expr = Self::Expr(Expr::try_parse(stream)?);
+                        if let Some(token) = stream.peek() {
+                            if token.kind == TokenType::Semi {
+                                stream.next();
+                            }
+                        }
+                        Ok(expr)
                     }
                     _ => Err(ParseError::InvalidToken(t.clone()).into()),
                 },
-                _ => Ok(Self::Expr(Expr::try_parse(stream)?)),
+                _ => {
+                    let expr = Self::Expr(Expr::try_parse(stream)?);
+                    if let Some(token) = stream.peek() {
+                        if token.kind == TokenType::Semi {
+                            stream.next();
+                        }
+                    }
+                    Ok(expr)
+                }
             },
         }
     }
