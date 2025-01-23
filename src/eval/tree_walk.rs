@@ -21,7 +21,11 @@ impl Evaluator for TreeWalker {
         &mut self,
         expression: &crate::parse::expr::Expr,
     ) -> anyhow::Result<crate::core::types::LoxType> {
-        expression.accept(self)
+        match expression.accept(self) {
+            Ok(r) => Ok(r),
+            //TODO
+            Err(e) => Err(e), //Ok(LoxType::default()),
+        }
     }
 }
 

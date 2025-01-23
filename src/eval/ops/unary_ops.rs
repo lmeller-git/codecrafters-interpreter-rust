@@ -15,8 +15,9 @@ pub fn neg(val: &LoxType) -> Result<LoxType> {
 }
 
 pub fn not(val: &LoxType) -> Result<LoxType> {
-    let LoxType::Bool(b) = val else {
-        return Err(RuntimeError::IllegalOp("Not on non bool".into()).into());
-    };
-    Ok(LoxType::Bool(b.not()))
+    match val {
+        LoxType::Number(_) | LoxType::String(_) => Ok(LoxType::Bool(false)),
+        LoxType::Nil => Ok(LoxType::Bool(true)),
+        LoxType::Bool(b) => Ok(LoxType::Bool(b.not())),
+    }
 }
