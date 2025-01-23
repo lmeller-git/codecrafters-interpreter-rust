@@ -110,6 +110,42 @@ fn main() -> Result<()> {
                 }
             }
         }
+        "run" => {
+            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
+                eprintln!("Failed to read file {}", filename);
+                String::new()
+            });
+            let (tokens, errors) = lexer::scan(&file_contents);
+            if !errors.is_empty() {
+                for e in errors {
+                    eprintln!("{}", e);
+                }
+                std::process::exit(65);
+            }
+            match Parser::new(tokens).parse_all() {
+                Ok((errors, ast)) => {
+                    for e in &errors {
+                        eprintln!("{}", e);
+                    }
+                    if !errors.is_empty() {
+                        std::process::exit(65);
+                    }
+                    // evaluate
+                    let (_res, errs) = Interpreter::new(ast, TreeWalker::new()).interpret()?;
+
+                    for e in &errs {
+                        eprintln!("{}", e);
+                    }
+                    if !errs.is_empty() {
+                        std::process::exit(70);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(70);
+                }
+            }
+        }
         _ => {
             eprintln!("Unknown command: {}", command);
             return Ok(());

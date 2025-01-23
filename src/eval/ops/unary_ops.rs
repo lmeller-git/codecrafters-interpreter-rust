@@ -19,5 +19,6 @@ pub fn not(val: &LoxType) -> Result<LoxType> {
         LoxType::Number(_) | LoxType::String(_) => Ok(LoxType::Bool(false)),
         LoxType::Nil => Ok(LoxType::Bool(true)),
         LoxType::Bool(b) => Ok(LoxType::Bool(b.not())),
+        LoxType::Unit => Ok(LoxType::Unit),
     }
 }

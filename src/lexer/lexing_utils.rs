@@ -40,6 +40,7 @@ impl Display for Token {
 pub enum TokenType {
     Ident(String),
     Literal(LiteralKind),
+    /// ';'
     Semi,
     /// `,`
     Comma,
@@ -174,7 +175,7 @@ impl Debug for TokenType {
             Self::NEq => write!(f, "!="),
             Self::OpenParen => write!(f, "("),
             Self::CloseParen => write!(f, ")"),
-            _ => write!(f, "valid"),
+            _ => write!(f, "not implemented: {}", self),
         }
     }
 }

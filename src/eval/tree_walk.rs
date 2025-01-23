@@ -8,6 +8,7 @@ use crate::{
     parse::{
         ast::{Visitable, Visitor},
         expr::{Primary, Unary},
+        stmt::Stmt,
     },
 };
 use anyhow::Result;
@@ -17,11 +18,8 @@ pub struct TreeWalker {}
 impl Evaluator for TreeWalker {
     fn resolve_err(&mut self) {}
 
-    fn evaluate(
-        &mut self,
-        expression: &crate::parse::expr::Expr,
-    ) -> anyhow::Result<crate::core::types::LoxType> {
-        match expression.accept(self) {
+    fn evaluate(&mut self, stmt: &Stmt) -> anyhow::Result<crate::core::types::LoxType> {
+        match stmt.accept(self) {
             Ok(r) => Ok(r),
             //TODO
             Err(e) => Err(e), //Ok(LoxType::default()),
@@ -31,6 +29,20 @@ impl Evaluator for TreeWalker {
 
 impl Visitor for TreeWalker {
     type Output = Result<LoxType>;
+
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Self::Output {
+        match stmt {
+            Stmt::Expr(e) => e.accept(self),
+            Stmt::Print(p) => p.accept(self),
+        }
+    }
+
+    fn visit_printstmt(&mut self, p_stmt: &crate::parse::stmt::PrintStmt) -> Self::Output {
+        let res = p_stmt.args.accept(self)?;
+        print!("{}", res);
+        Ok(LoxType::default())
+    }
+
     fn visit_expr(&mut self, expr: &crate::parse::expr::Expr) -> Self::Output {
         expr.eq.accept(self)
     }

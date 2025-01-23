@@ -89,13 +89,13 @@ pub fn scan(data: &str) -> (TokenStream<std::vec::IntoIter<Token>>, Vec<anyhow::
             '/' => match chars.peek() {
                 Some('/') => {
                     chars.next();
-                    let comment = parse_comment(&mut chars, false, &mut line);
-                    tokens.push(Token::new(TokenType::SingleLineComment(comment), line))
+                    let _comment = parse_comment(&mut chars, false, &mut line);
+                    //tokens.push(Token::new(TokenType::SingleLineComment(comment), line))
                 }
                 Some('*') => {
                     chars.next();
-                    let comment = parse_comment(&mut chars, true, &mut line);
-                    tokens.push(Token::new(TokenType::MultiLineComment(comment), line))
+                    let _comment = parse_comment(&mut chars, true, &mut line);
+                    //tokens.push(Token::new(TokenType::MultiLineComment(comment), line))
                 }
                 _ => tokens.push(Token::new(TokenType::Slash, line)),
             },

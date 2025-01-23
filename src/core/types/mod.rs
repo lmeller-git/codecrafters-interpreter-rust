@@ -13,8 +13,9 @@ pub enum LoxType {
     Number(Number),
     String(LoxString),
     Bool(bool),
-    #[default]
     Nil,
+    #[default]
+    Unit,
 }
 
 impl Display for LoxType {
@@ -24,6 +25,7 @@ impl Display for LoxType {
             Self::Number(num) => write!(f, "{}", num)?,
             Self::String(s) => write!(f, "{}", s)?,
             Self::Bool(b) => write!(f, "{}", b)?,
+            Self::Unit => write!(f, "()")?,
         }
         Ok(())
     }

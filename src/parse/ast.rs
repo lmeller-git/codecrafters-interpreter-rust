@@ -3,6 +3,7 @@ use std::fmt::Display;
 
 use super::{
     expr::{Comparison, Equality, Expr, Factor, Primary, Term, Unary},
+    stmt::{PrintStmt, Stmt},
     Parser,
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
@@ -10,21 +11,21 @@ use anyhow::Result;
 
 #[derive(Default)]
 pub struct Ast {
-    pub exprs: Vec<Expr>,
+    pub prog: Vec<Stmt>,
 }
 
 impl IntoIterator for Ast {
-    type Item = Expr;
-    type IntoIter = std::vec::IntoIter<Expr>;
+    type Item = Stmt;
+    type IntoIter = std::vec::IntoIter<Stmt>;
     fn into_iter(self) -> Self::IntoIter {
-        self.exprs.into_iter()
+        self.prog.into_iter()
     }
 }
 
 impl Display for Ast {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for expr in &self.exprs {
-            writeln!(f, "{}", expr)?;
+        for stmt in &self.prog {
+            writeln!(f, "{}", stmt)?;
         }
         Ok(())
     }
@@ -36,8 +37,8 @@ impl<T: Iterator<Item = Token>> Parser<T> {
             tokens: tokens.peekable(),
         }
     }
-    pub fn parse_one(&mut self) -> Result<Expr> {
-        self.parse_expr()
+    pub fn parse_one(&mut self) -> Result<Stmt> {
+        self.parse_stmt()
     }
     pub fn parse_all(&mut self) -> Result<(Vec<anyhow::Error>, Ast)> {
         let mut errors = Vec::new();
@@ -47,7 +48,7 @@ impl<T: Iterator<Item = Token>> Parser<T> {
                 break;
             }
             match self.parse_one() {
-                Ok(expr) => ast.exprs.push(expr),
+                Ok(stmt) => ast.prog.push(stmt),
                 Err(e) => {
                     errors.push(e);
                     self.sync();
@@ -55,6 +56,9 @@ impl<T: Iterator<Item = Token>> Parser<T> {
             }
         }
         Ok((errors, ast))
+    }
+    fn parse_stmt(&mut self) -> Result<Stmt> {
+        Stmt::try_parse(&mut self.tokens)
     }
     fn parse_expr(&mut self) -> Result<Expr> {
         Expr::try_parse(&mut self.tokens)
@@ -109,4 +113,6 @@ pub trait Visitor: Sized {
     fn visit_factor(&mut self, factor: &Factor) -> Self::Output;
     fn visit_unary(&mut self, unary: &Unary) -> Self::Output;
     fn visit_primary(&mut self, primary: &Primary) -> Self::Output;
+    fn visit_stmt(&mut self, stmt: &Stmt) -> Self::Output;
+    fn visit_printstmt(&mut self, p_stmt: &PrintStmt) -> Self::Output;
 }

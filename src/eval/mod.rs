@@ -9,6 +9,7 @@ use crate::{
     parse::{
         ast::{Ast, Visitor},
         expr::Expr,
+        stmt::Stmt,
     },
 };
 //TODO refactor parser and evaluator to use a BinaryOp enum instead of Token!!!!
@@ -27,8 +28,8 @@ where
     pub fn interpret(&mut self) -> Result<(Vec<LoxType>, Vec<anyhow::Error>)> {
         let mut res = Vec::new();
         let mut errs = Vec::new();
-        for expr in &self.ast.exprs {
-            match self.evaluator.evaluate(expr) {
+        for stmt in &self.ast.prog {
+            match self.evaluator.evaluate(stmt) {
                 Ok(r) => res.push(r),
                 Err(e) => errs.push(e),
             }
@@ -43,7 +44,7 @@ where
 
 pub trait Evaluator: Sized + Visitor<Output = Result<LoxType>> {
     fn resolve_err(&mut self);
-    fn evaluate(&mut self, expression: &Expr) -> Result<LoxType>;
+    fn evaluate(&mut self, stmt: &Stmt) -> Result<LoxType>;
 }
 
 #[derive(Error, Debug)]

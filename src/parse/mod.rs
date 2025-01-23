@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod expr;
+pub mod stmt;
 use std::fmt::Display;
 
 use crate::lexer::lexing_utils::{Token, TokenStream};
