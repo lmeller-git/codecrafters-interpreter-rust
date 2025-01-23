@@ -239,7 +239,7 @@ impl LoxNeg for Number {
         Self {
             value: match self.value {
                 NumericValue::Float(f) => NumericValue::Float(-f),
-                NumericValue::Int(i) => NumericValue::Int(i),
+                NumericValue::Int(i) => NumericValue::Int(-i),
             },
         }
     }
