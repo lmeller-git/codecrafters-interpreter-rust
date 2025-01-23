@@ -93,14 +93,20 @@ fn main() -> Result<()> {
                         std::process::exit(65);
                     }
                     // evaluate
-                    let res = Interpreter::new(ast, TreeWalker::new()).interpret()?;
+                    let (res, errs) = Interpreter::new(ast, TreeWalker::new()).interpret()?;
                     for r in res {
                         println!("{}", r);
+                    }
+                    for e in &errs {
+                        eprintln!("{}", e);
+                    }
+                    if !errs.is_empty() {
+                        std::process::exit(70);
                     }
                 }
                 Err(e) => {
                     eprintln!("{}", e);
-                    std::process::exit(65);
+                    std::process::exit(70);
                 }
             }
         }

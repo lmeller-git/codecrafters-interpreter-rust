@@ -24,12 +24,16 @@ impl<T> Interpreter<T>
 where
     T: Evaluator,
 {
-    pub fn interpret(&mut self) -> Result<Vec<LoxType>> {
+    pub fn interpret(&mut self) -> Result<(Vec<LoxType>, Vec<anyhow::Error>)> {
         let mut res = Vec::new();
+        let mut errs = Vec::new();
         for expr in &self.ast.exprs {
-            res.push(self.evaluator.evaluate(expr)?);
+            match self.evaluator.evaluate(expr) {
+                Ok(r) => res.push(r),
+                Err(e) => errs.push(e),
+            }
         }
-        Ok(res)
+        Ok((res, errs))
     }
 
     pub fn new(ast: Ast, evaluator: T) -> Self {
