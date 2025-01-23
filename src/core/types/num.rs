@@ -217,7 +217,9 @@ impl LoxDiv for NumericValue {
     fn divide(&self, rhs: &Self) -> Self::Output {
         match (self, rhs) {
             (NumericValue::Float(f), NumericValue::Float(f2)) => NumericValue::Float(f / f2),
-            (NumericValue::Int(i), NumericValue::Int(i2)) => NumericValue::Int(i / i2),
+            (NumericValue::Int(i), NumericValue::Int(i2)) => {
+                NumericValue::Float(*i as f64 / *i2 as f64)
+            }
             (NumericValue::Float(f), NumericValue::Int(i)) => NumericValue::Float(f / *i as f64),
             (NumericValue::Int(i), NumericValue::Float(f)) => NumericValue::Float(*i as f64 / f),
         }
