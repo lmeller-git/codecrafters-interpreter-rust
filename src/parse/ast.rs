@@ -10,7 +10,15 @@ use anyhow::Result;
 
 #[derive(Default)]
 pub struct Ast {
-    exprs: Vec<Expr>,
+    pub exprs: Vec<Expr>,
+}
+
+impl IntoIterator for Ast {
+    type Item = Expr;
+    type IntoIter = std::vec::IntoIter<Expr>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.exprs.into_iter()
+    }
 }
 
 impl Display for Ast {
@@ -78,7 +86,7 @@ impl<T: Iterator<Item = Token>> Parser<T> {
 }
 
 pub trait Visitable<V: Visitor>: Sized {
-    fn accept(&mut self, visitor: &mut V);
+    fn accept(&self, visitor: &mut V) -> V::Output;
 }
 
 pub trait Parseable<T>: Sized + Default
@@ -92,11 +100,13 @@ where
 }
 
 pub trait Visitor: Sized {
-    fn visit_expr(&mut self, expr: &Expr);
-    fn visit_equality(&mut self, eq: &Equality);
-    fn visit_comparison(&mut self, comp: &Comparison);
-    fn visit_term(&mut self, term: &Term);
-    fn visit_factor(&mut self, factor: &Factor);
-    fn visit_unary(&mut self, unary: &Unary);
-    fn visit_primary(&mut self, primary: &Primary);
+    type Output;
+
+    fn visit_expr(&mut self, expr: &Expr) -> Self::Output;
+    fn visit_equality(&mut self, eq: &Equality) -> Self::Output;
+    fn visit_comparison(&mut self, comp: &Comparison) -> Self::Output;
+    fn visit_term(&mut self, term: &Term) -> Self::Output;
+    fn visit_factor(&mut self, factor: &Factor) -> Self::Output;
+    fn visit_unary(&mut self, unary: &Unary) -> Self::Output;
+    fn visit_primary(&mut self, primary: &Primary) -> Self::Output;
 }

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::core::types::{LoxString, Number};
+use crate::core::types::{num::Number, string::LoxString};
 use anyhow::Result;
 use lexing_utils::{Keyword, LiteralKind, Token, TokenStream, TokenType};
 use std::{

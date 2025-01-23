@@ -1,11 +1,15 @@
 mod core;
+mod eval;
 mod lexer;
 mod parse;
 use anyhow::Result;
+use eval::tree_walk::TreeWalker;
+use eval::Interpreter;
 use parse::Parser;
 use std::env;
 use std::fs;
 
+//TODO rewrite this
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
@@ -60,6 +64,38 @@ fn main() -> Result<()> {
                     }
                     if !errors.is_empty() {
                         std::process::exit(65);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{}", e);
+                    std::process::exit(65);
+                }
+            }
+        }
+        "evaluate" => {
+            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
+                eprintln!("Failed to read file {}", filename);
+                String::new()
+            });
+            let (tokens, errors) = lexer::scan(&file_contents);
+            if !errors.is_empty() {
+                for e in errors {
+                    eprintln!("{}", e);
+                }
+                std::process::exit(65);
+            }
+            match Parser::new(tokens).parse_all() {
+                Ok((errors, ast)) => {
+                    for e in &errors {
+                        eprintln!("{}", e);
+                    }
+                    if !errors.is_empty() {
+                        std::process::exit(65);
+                    }
+                    // evaluate
+                    let res = Interpreter::new(ast, TreeWalker::new()).interpret()?;
+                    for r in res {
+                        println!("{}", r);
                     }
                 }
                 Err(e) => {

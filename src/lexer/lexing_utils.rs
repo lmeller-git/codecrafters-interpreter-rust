@@ -1,7 +1,7 @@
 #![allow(dead_code)]
-use crate::core::types::{LoxString, Number};
-
 use std::fmt::{Debug, Display};
+
+use crate::core::types::{num::Number, string::LoxString};
 
 pub const EOF_CHAR: char = '\0';
 

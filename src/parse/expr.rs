@@ -2,37 +2,37 @@ use super::{
     ast::{Parseable, Visitable, Visitor},
     ParseError,
 };
-use crate::lexer::lexing_utils::{Token, TokenStream, TokenType};
+use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
 use std::{fmt::Display, iter::Peekable};
 
 #[derive(Default, Debug)]
 pub struct Expr {
-    eq: Equality,
+    pub eq: Equality,
 }
 
 #[derive(Default, Debug)]
 pub struct Equality {
-    rhs: Comparison,
-    lhs: Option<(Token, Box<Equality>)>,
+    pub rhs: Comparison,
+    pub lhs: Option<(Token, Box<Equality>)>,
 }
 
 #[derive(Default, Debug)]
 pub struct Comparison {
-    rhs: Term,
-    lhs: Option<(Token, Box<Comparison>)>,
+    pub rhs: Term,
+    pub lhs: Option<(Token, Box<Comparison>)>,
 }
 
 #[derive(Default, Debug)]
 pub struct Term {
-    rhs: Factor,
-    lhs: Option<(Token, Box<Term>)>,
+    pub rhs: Factor,
+    pub lhs: Option<(Token, Box<Term>)>,
 }
 
 #[derive(Default, Debug)]
 pub struct Factor {
-    rhs: Unary,
-    lhs: Option<(Token, Box<Factor>)>,
+    pub rhs: Unary,
+    pub lhs: Option<(Token, Box<Factor>)>,
 }
 
 #[derive(Debug)]
@@ -130,44 +130,44 @@ impl Display for Primary {
 }
 
 impl<V: Visitor> Visitable<V> for Expr {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_expr(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_expr(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Equality {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_equality(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_equality(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Comparison {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_comparison(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_comparison(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Term {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_term(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_term(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Factor {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_factor(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_factor(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Unary {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_unary(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_unary(self)
     }
 }
 
 impl<V: Visitor> Visitable<V> for Primary {
-    fn accept(&mut self, visitor: &mut V) {
-        visitor.visit_primary(self);
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_primary(self)
     }
 }
 
@@ -296,7 +296,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Primary {
     fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
         match stream.peek() {
             Some(token) => match token.kind {
-                TokenType::Literal(_) | TokenType::Keyword(_) => {
+                TokenType::Literal(_)
+                | TokenType::Keyword(Keyword::False | Keyword::Nil | Keyword::True) => {
                     Ok(Self::Token(stream.next().unwrap()))
                 }
                 TokenType::OpenParen => {
