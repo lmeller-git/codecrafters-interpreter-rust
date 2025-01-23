@@ -162,7 +162,11 @@ fn parse_string_lit(chars: &mut std::iter::Peekable<Chars>, line: &mut usize) ->
     for c in chars {
         match c {
             '\"' => return Ok(LoxString::from_str(&str_lit)?),
-            '\n' => *line += 1,
+            '\n' => {
+                //disagree with this. Should not push /n imo
+                str_lit.push('\n');
+                *line += 1
+            }
             _ => str_lit.push(c),
         }
     }

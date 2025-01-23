@@ -39,7 +39,7 @@ impl Visitor for TreeWalker {
 
     fn visit_printstmt(&mut self, p_stmt: &crate::parse::stmt::PrintStmt) -> Self::Output {
         let res = p_stmt.args.accept(self)?;
-        print!("{}", res);
+        println!("{}", res);
         Ok(LoxType::default())
     }
 
