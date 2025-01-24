@@ -1,9 +1,12 @@
 use std::fmt::Display;
 
+use bytes::BufMut;
+
 use crate::lexer::lexing_utils::{Keyword, Token, TokenType};
 
 use super::{
     ast::{Parseable, Visitable, Visitor},
+    declaration::Declaration,
     expr::Expr,
     ParseError,
 };
@@ -12,6 +15,7 @@ use super::{
 pub enum Stmt {
     Expr(Expr),
     Print(PrintStmt),
+    Block(Block),
 }
 
 impl Default for Stmt {
@@ -25,6 +29,7 @@ impl Display for Stmt {
         match self {
             Self::Expr(e) => write!(f, "{}", e),
             Self::Print(p) => write!(f, "{}", p),
+            Self::Block(b) => write!(f, "{}", b),
         }
     }
 }
@@ -48,8 +53,13 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Stmt {
                         }
                         Ok(expr)
                     }
+
                     _ => Err(ParseError::InvalidToken(t.clone()).into()),
                 },
+                TokenType::OpenBrace => {
+                    _ = stream.next();
+                    Ok(Self::Block(Block::try_parse(stream)?))
+                }
                 _ => {
                     let expr = Self::Expr(Expr::try_parse(stream)?);
                     if let Some(token) = stream.peek() {
@@ -101,5 +111,43 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for PrintStmt {
 impl<V: Visitor> Visitable<V> for PrintStmt {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_printstmt(self)
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct Block {
+    pub decls: Vec<Box<Declaration>>,
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Block {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
+        let mut decls = Vec::new();
+        loop {
+            let t = stream.peek();
+            match t {
+                Some(t) => match t.kind {
+                    TokenType::CloseBrace => {
+                        _ = stream.next();
+                        break;
+                    }
+                    _ => decls.push(Box::new(Declaration::try_parse(stream)?)),
+                },
+                None => return Err(ParseError::UnexpectedNone.into()),
+            }
+        }
+
+        Ok(Self { decls })
+    }
+}
+
+impl<V: Visitor> Visitable<V> for Block {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_block(self)
     }
 }

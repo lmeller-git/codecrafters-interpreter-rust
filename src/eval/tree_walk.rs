@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use super::{
     environment::Environment,
     ops::{binary_ops, unary_ops},
@@ -16,7 +18,7 @@ use crate::{
 use anyhow::Result;
 
 pub struct TreeWalker {
-    env: Environment,
+    env: Rc<RefCell<Environment>>,
 }
 
 impl Evaluator for TreeWalker {
@@ -34,6 +36,20 @@ impl Evaluator for TreeWalker {
 impl Visitor for TreeWalker {
     type Output = Result<LoxType>;
 
+    fn visit_block(&mut self, block: &crate::parse::stmt::Block) -> Self::Output {
+        let prev_env_state = self.env.clone();
+        self.env = Rc::new(RefCell::new(
+            Environment::new().with_parent(prev_env_state.clone()),
+        ));
+
+        for decl in &block.decls {
+            self.evaluate(decl)?;
+        }
+
+        self.env = prev_env_state;
+        Ok(LoxType::default())
+    }
+
     fn visit_declaration(&mut self, decl: &crate::parse::declaration::Declaration) -> Self::Output {
         match decl {
             Declaration::Var(v) => v.accept(self),
@@ -47,7 +63,7 @@ impl Visitor for TreeWalker {
         } else {
             LoxType::Nil
         };
-        self.env.define(var_decl.ident.clone(), res);
+        self.env.borrow_mut().define(var_decl.ident.clone(), res);
         Ok(LoxType::default())
     }
 
@@ -55,6 +71,7 @@ impl Visitor for TreeWalker {
         match stmt {
             Stmt::Expr(e) => e.accept(self),
             Stmt::Print(p) => p.accept(self),
+            Stmt::Block(b) => b.accept(self),
         }
     }
 
@@ -127,7 +144,7 @@ impl Visitor for TreeWalker {
     fn visit_primary(&mut self, primary: &crate::parse::expr::Primary) -> Self::Output {
         match primary {
             Primary::Token(token) => match token.kind {
-                TokenType::Ident(ref ident) => self.env.get(ident).cloned(),
+                TokenType::Ident(ref ident) => self.env.borrow().get(ident),
                 TokenType::Literal(_) | TokenType::Keyword(_) => Ok(token.kind.clone().into()),
                 _ => Err(RuntimeError::ImpossibleOP(token.kind.clone()).into()),
             },
@@ -139,7 +156,7 @@ impl Visitor for TreeWalker {
         match assignment {
             Assignment::Assignment(ident, to) => {
                 let to = to.accept(self)?;
-                self.env.define(ident.clone(), to.clone());
+                self.env.borrow_mut().assign(ident, to.clone())?;
                 Ok(to)
             }
             Assignment::Equality(eq) => eq.accept(self),
@@ -150,7 +167,7 @@ impl Visitor for TreeWalker {
 impl TreeWalker {
     pub fn new() -> Self {
         Self {
-            env: Environment::new(),
+            env: Rc::new(RefCell::new(Environment::new())),
         }
     }
 }
