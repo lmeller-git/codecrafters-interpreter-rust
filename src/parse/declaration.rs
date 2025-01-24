@@ -76,6 +76,7 @@ impl<T: Iterator<Item = Token>> Parseable<T> for VarDecl {
                     _ = stream.next().unwrap();
                     match stream.peek() {
                         Some(token) if token.kind == TokenType::Eq => _ = stream.next(),
+                        Some(token) if token.kind == TokenType::Semi => {}
                         Some(token) => return Err(ParseError::InvalidToken(token.clone()).into()),
                         None => return Err(ParseError::UnexpectedNone.into()),
                     }
