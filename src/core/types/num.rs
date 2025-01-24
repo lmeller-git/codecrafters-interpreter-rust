@@ -352,7 +352,7 @@ mod tests {
     fn test_numeric_value_div() {
         let a = NumericValue::Int(10);
         let b = NumericValue::Int(5);
-        assert_eq!(a.divide(&b), NumericValue::Int(2));
+        assert_eq!(a.divide(&b), NumericValue::Float(2.0));
 
         let c = NumericValue::Float(10.0);
         let d = NumericValue::Float(2.0);

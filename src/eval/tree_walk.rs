@@ -1,4 +1,5 @@
 use super::{
+    environment::Environment,
     ops::{binary_ops, unary_ops},
     Evaluator, RuntimeError,
 };
@@ -7,19 +8,22 @@ use crate::{
     lexer::lexing_utils::{Keyword, LiteralKind, TokenType},
     parse::{
         ast::{Visitable, Visitor},
+        declaration::Declaration,
         expr::{Primary, Unary},
         stmt::Stmt,
     },
 };
 use anyhow::Result;
 
-pub struct TreeWalker {}
+pub struct TreeWalker {
+    env: Environment,
+}
 
 impl Evaluator for TreeWalker {
     fn resolve_err(&mut self) {}
 
-    fn evaluate(&mut self, stmt: &Stmt) -> anyhow::Result<crate::core::types::LoxType> {
-        match stmt.accept(self) {
+    fn evaluate(&mut self, decl: &Declaration) -> anyhow::Result<crate::core::types::LoxType> {
+        match decl.accept(self) {
             Ok(r) => Ok(r),
             //TODO
             Err(e) => Err(e), //Ok(LoxType::default()),
@@ -29,6 +33,23 @@ impl Evaluator for TreeWalker {
 
 impl Visitor for TreeWalker {
     type Output = Result<LoxType>;
+
+    fn visit_declaration(&mut self, decl: &crate::parse::declaration::Declaration) -> Self::Output {
+        match decl {
+            Declaration::Var(v) => v.accept(self),
+            Declaration::Stmt(s) => s.accept(self),
+        }
+    }
+
+    fn visit_vardecl(&mut self, var_decl: &crate::parse::declaration::VarDecl) -> Self::Output {
+        let res = if let Some(expr) = &var_decl.value {
+            expr.accept(self)?
+        } else {
+            LoxType::Nil
+        };
+        self.env.define(var_decl.ident.clone(), res);
+        Ok(LoxType::default())
+    }
 
     fn visit_stmt(&mut self, stmt: &Stmt) -> Self::Output {
         match stmt {
@@ -106,6 +127,7 @@ impl Visitor for TreeWalker {
     fn visit_primary(&mut self, primary: &crate::parse::expr::Primary) -> Self::Output {
         match primary {
             Primary::Token(token) => match token.kind {
+                TokenType::Ident(ref ident) => self.env.get(ident).cloned(),
                 TokenType::Literal(_) | TokenType::Keyword(_) => Ok(token.kind.clone().into()),
                 _ => Err(RuntimeError::ImpossibleOP(token.kind.clone()).into()),
             },
@@ -116,7 +138,9 @@ impl Visitor for TreeWalker {
 
 impl TreeWalker {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            env: Environment::new(),
+        }
     }
 }
 

@@ -8,7 +8,7 @@ use std::fmt::Display;
 use num::Number;
 use string::LoxString;
 
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub enum LoxType {
     Number(Number),
     String(LoxString),

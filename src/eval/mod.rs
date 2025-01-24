@@ -1,13 +1,14 @@
 pub mod tree_walk;
 use anyhow::Result;
 use thiserror::Error;
+mod environment;
 mod ops;
 use crate::{
     core::types::LoxType,
     lexer::lexing_utils::TokenType,
     parse::{
         ast::{Ast, Visitor},
-        stmt::Stmt,
+        declaration::Declaration,
     },
 };
 //TODO refactor parser and evaluator to use some kind of BinaryOp/UnaryOp enum instead of Token!!!!
@@ -31,7 +32,6 @@ where
                 Ok(r) => res.push(r),
                 Err(e) => {
                     errs.push(e);
-                    // ???????????
                     return Ok((res, errs));
                 }
             }
@@ -46,7 +46,7 @@ where
 
 pub trait Evaluator: Sized + Visitor<Output = Result<LoxType>> {
     fn resolve_err(&mut self);
-    fn evaluate(&mut self, stmt: &Stmt) -> Result<LoxType>;
+    fn evaluate(&mut self, decl: &Declaration) -> Result<LoxType>;
 }
 
 #[derive(Error, Debug)]
@@ -55,4 +55,6 @@ pub enum RuntimeError {
     IllegalOp(String),
     #[error("Operation {0} is not possible in this context")]
     ImpossibleOP(TokenType),
+    #[error("Uninitialized variable {0}")]
+    UnknownVar(String),
 }

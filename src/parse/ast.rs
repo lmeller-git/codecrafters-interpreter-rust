@@ -2,6 +2,7 @@
 use std::fmt::Display;
 
 use super::{
+    declaration::{Declaration, VarDecl},
     expr::{Comparison, Equality, Expr, Factor, Primary, Term, Unary},
     stmt::{PrintStmt, Stmt},
     Parser,
@@ -11,12 +12,12 @@ use anyhow::Result;
 
 #[derive(Default)]
 pub struct Ast {
-    pub prog: Vec<Stmt>,
+    pub prog: Vec<Declaration>,
 }
 
 impl IntoIterator for Ast {
-    type Item = Stmt;
-    type IntoIter = std::vec::IntoIter<Stmt>;
+    type Item = Declaration;
+    type IntoIter = std::vec::IntoIter<Declaration>;
     fn into_iter(self) -> Self::IntoIter {
         self.prog.into_iter()
     }
@@ -37,8 +38,8 @@ impl<T: Iterator<Item = Token>> Parser<T> {
             tokens: tokens.peekable(),
         }
     }
-    pub fn parse_one(&mut self) -> Result<Stmt> {
-        self.parse_stmt()
+    pub fn parse_one(&mut self) -> Result<Declaration> {
+        self.parse_decl()
     }
     pub fn parse_all(&mut self) -> Result<(Vec<anyhow::Error>, Ast)> {
         let mut errors = Vec::new();
@@ -56,6 +57,9 @@ impl<T: Iterator<Item = Token>> Parser<T> {
             }
         }
         Ok((errors, ast))
+    }
+    fn parse_decl(&mut self) -> Result<Declaration> {
+        Declaration::try_parse(&mut self.tokens)
     }
     fn parse_stmt(&mut self) -> Result<Stmt> {
         Stmt::try_parse(&mut self.tokens)
@@ -115,4 +119,6 @@ pub trait Visitor: Sized {
     fn visit_primary(&mut self, primary: &Primary) -> Self::Output;
     fn visit_stmt(&mut self, stmt: &Stmt) -> Self::Output;
     fn visit_printstmt(&mut self, p_stmt: &PrintStmt) -> Self::Output;
+    fn visit_declaration(&mut self, decl: &Declaration) -> Self::Output;
+    fn visit_vardecl(&mut self, var_decl: &VarDecl) -> Self::Output;
 }

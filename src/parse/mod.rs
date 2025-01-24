@@ -1,4 +1,5 @@
 pub mod ast;
+pub mod declaration;
 pub mod expr;
 pub mod stmt;
 use std::fmt::Display;

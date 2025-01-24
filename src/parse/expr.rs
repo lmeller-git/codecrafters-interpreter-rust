@@ -297,6 +297,7 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Primary {
         match stream.peek() {
             Some(token) => match token.kind {
                 TokenType::Literal(_)
+                | TokenType::Ident(_)
                 | TokenType::Keyword(Keyword::False | Keyword::Nil | Keyword::True) => {
                     Ok(Self::Token(stream.next().unwrap()))
                 }
