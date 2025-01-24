@@ -9,7 +9,7 @@ use crate::{
     parse::{
         ast::{Visitable, Visitor},
         declaration::Declaration,
-        expr::{Primary, Unary},
+        expr::{Assignment, Primary, Unary},
         stmt::Stmt,
     },
 };
@@ -65,7 +65,7 @@ impl Visitor for TreeWalker {
     }
 
     fn visit_expr(&mut self, expr: &crate::parse::expr::Expr) -> Self::Output {
-        expr.eq.accept(self)
+        expr.assignment.accept(self)
     }
     fn visit_equality(&mut self, eq: &crate::parse::expr::Equality) -> Self::Output {
         let rhs: LoxType = eq.rhs.accept(self)?;
@@ -132,6 +132,17 @@ impl Visitor for TreeWalker {
                 _ => Err(RuntimeError::ImpossibleOP(token.kind.clone()).into()),
             },
             Primary::Grouping(expr) => expr.accept(self),
+        }
+    }
+
+    fn visit_assignment(&mut self, assignment: &crate::parse::expr::Assignment) -> Self::Output {
+        match assignment {
+            Assignment::Assignment(ident, to) => {
+                let to = to.accept(self)?;
+                self.env.define(ident.clone(), to.clone());
+                Ok(to)
+            }
+            Assignment::Equality(eq) => eq.accept(self),
         }
     }
 }

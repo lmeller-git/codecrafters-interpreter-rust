@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use super::{
     declaration::{Declaration, VarDecl},
-    expr::{Comparison, Equality, Expr, Factor, Primary, Term, Unary},
+    expr::{Assignment, Comparison, Equality, Expr, Factor, Primary, Term, Unary},
     stmt::{PrintStmt, Stmt},
     Parser,
 };
@@ -32,11 +32,9 @@ impl Display for Ast {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parser<T> {
+impl<T: Iterator<Item = Token> + Clone> Parser<T> {
     pub fn new(tokens: TokenStream<T>) -> Self {
-        Self {
-            tokens: tokens.peekable(),
-        }
+        Self { tokens }
     }
     pub fn parse_one(&mut self) -> Result<Declaration> {
         self.parse_decl()
@@ -49,7 +47,9 @@ impl<T: Iterator<Item = Token>> Parser<T> {
                 break;
             }
             match self.parse_one() {
-                Ok(stmt) => ast.prog.push(stmt),
+                Ok(stmt) => {
+                    ast.prog.push(stmt);
+                }
                 Err(e) => {
                     errors.push(e);
                     self.sync();
@@ -99,10 +99,10 @@ pub trait Visitable<V: Visitor>: Sized {
 
 pub trait Parseable<T>: Sized + Default
 where
-    T: Iterator<Item = Token>,
+    T: Iterator<Item = Token> + Clone,
 {
-    fn try_parse(stream: &mut std::iter::Peekable<TokenStream<T>>) -> Result<Self>;
-    fn parse_or_default(stream: &mut std::iter::Peekable<TokenStream<T>>) -> Self {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self>;
+    fn parse_or_default(stream: &mut TokenStream<T>) -> Self {
         Self::try_parse(stream).unwrap_or_else(|_| Self::default())
     }
 }
@@ -121,4 +121,5 @@ pub trait Visitor: Sized {
     fn visit_printstmt(&mut self, p_stmt: &PrintStmt) -> Self::Output;
     fn visit_declaration(&mut self, decl: &Declaration) -> Self::Output;
     fn visit_vardecl(&mut self, var_decl: &VarDecl) -> Self::Output;
+    fn visit_assignment(&mut self, assignment: &Assignment) -> Self::Output;
 }

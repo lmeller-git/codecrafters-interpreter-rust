@@ -7,8 +7,8 @@ use std::fmt::Display;
 use crate::lexer::lexing_utils::{Token, TokenStream};
 
 // takes a TokenStream and parses it into an AST via recursive descent
-pub struct Parser<T: Iterator<Item = Token>> {
-    tokens: std::iter::Peekable<TokenStream<T>>,
+pub struct Parser<T: Iterator<Item = Token> + Clone> {
+    tokens: TokenStream<T>,
 }
 
 #[derive(Debug)]

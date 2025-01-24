@@ -8,7 +8,13 @@ use std::{fmt::Display, iter::Peekable};
 
 #[derive(Default, Debug)]
 pub struct Expr {
-    pub eq: Equality,
+    pub assignment: Assignment,
+}
+
+#[derive(Debug)]
+pub enum Assignment {
+    Assignment(String, Box<Assignment>),
+    Equality(Equality),
 }
 
 #[derive(Default, Debug)]
@@ -47,6 +53,12 @@ pub enum Primary {
     Grouping(Expr),
 }
 
+impl Default for Assignment {
+    fn default() -> Self {
+        Self::Equality(Equality::default())
+    }
+}
+
 impl Default for Unary {
     fn default() -> Self {
         Self::Primary(Box::default())
@@ -61,7 +73,16 @@ impl Default for Primary {
 
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.eq)
+        write!(f, "{}", self.assignment)
+    }
+}
+
+impl Display for Assignment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Assignment(ident, to) => write!(f, "{} = {}", ident, to),
+            Self::Equality(eq) => write!(f, "{}", eq),
+        }
     }
 }
 
@@ -135,6 +156,12 @@ impl<V: Visitor> Visitable<V> for Expr {
     }
 }
 
+impl<V: Visitor> Visitable<V> for Assignment {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_assignment(self)
+    }
+}
+
 impl<V: Visitor> Visitable<V> for Equality {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_equality(self)
@@ -171,14 +198,56 @@ impl<V: Visitor> Visitable<V> for Primary {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Expr {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
-        Equality::try_parse(stream).map(|eq| Self { eq })
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Expr {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
+        Assignment::try_parse(stream).map(|assignment| Self { assignment })
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Equality {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Assignment {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
+        let mut fork = stream.fork();
+
+        match Equality::try_parse(&mut fork) {
+            Ok(eq) => match fork.peek() {
+                Some(token) if token.kind == TokenType::Eq => {}
+                _ => {
+                    stream.join(fork);
+                    return Ok(Self::Equality(eq));
+                }
+            },
+            Err(e) => match e.downcast_ref() {
+                Some(ParseError::InvalidToken(ref token)) if token.kind == TokenType::Eq => {}
+                _ => {
+                    return Err(e);
+                }
+            },
+        }
+
+        let ident = match stream.peek() {
+            Some(token) => match token.kind {
+                TokenType::Ident(ident) => {
+                    stream.next().unwrap();
+                    ident
+                }
+                _ => return Err(ParseError::InvalidToken(token.clone()).into()),
+            },
+            None => return Err(ParseError::UnexpectedNone.into()),
+        };
+
+        match stream.peek() {
+            Some(token) if token.kind == TokenType::Eq => _ = stream.next(),
+            Some(token) => return Err(ParseError::InvalidToken(token.clone()).into()),
+            None => return Err(ParseError::UnexpectedNone.into()),
+        }
+
+        let expr = Assignment::try_parse(stream)?;
+        Ok(Self::Assignment(ident, Box::new(expr)))
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Equality {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         let rhs = Comparison::try_parse(stream)?;
         let mut lhs = None;
         let mut expr = Self { rhs, lhs };
@@ -201,8 +270,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Equality {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Comparison {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Comparison {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         let rhs = Term::try_parse(stream)?;
         let mut lhs = None;
         let mut expr = Self { rhs, lhs };
@@ -225,8 +294,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Comparison {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Term {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Term {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         let rhs = Factor::try_parse(stream)?;
         let mut lhs = None;
         let mut expr = Self { rhs, lhs };
@@ -249,8 +318,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Term {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Factor {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Factor {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         let rhs = Unary::try_parse(stream)?;
         let mut lhs = None;
         let mut expr = Self { rhs, lhs };
@@ -273,8 +342,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Factor {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Unary {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Unary {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         match stream.peek() {
             Some(token) => match token.kind {
                 TokenType::Bang | TokenType::Minus => {
@@ -292,8 +361,8 @@ impl<T: Iterator<Item = Token>> Parseable<T> for Unary {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Primary {
-    fn try_parse(stream: &mut Peekable<TokenStream<T>>) -> Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         match stream.peek() {
             Some(token) => match token.kind {
                 TokenType::Literal(_)

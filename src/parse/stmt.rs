@@ -29,10 +29,8 @@ impl Display for Stmt {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Stmt {
-    fn try_parse(
-        stream: &mut std::iter::Peekable<crate::lexer::lexing_utils::TokenStream<T>>,
-    ) -> anyhow::Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Stmt {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
         match stream.peek() {
             None => Err(ParseError::UnexpectedNone.into()),
             Some(t) => match t.kind {
@@ -83,10 +81,8 @@ impl Display for PrintStmt {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for PrintStmt {
-    fn try_parse(
-        stream: &mut std::iter::Peekable<crate::lexer::lexing_utils::TokenStream<T>>,
-    ) -> anyhow::Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for PrintStmt {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
         let expr = Expr::try_parse(stream)?;
         if let Some(token) = stream.peek() {
             if token.kind == TokenType::Semi {

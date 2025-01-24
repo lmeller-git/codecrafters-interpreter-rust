@@ -30,10 +30,8 @@ impl Default for Declaration {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for Declaration {
-    fn try_parse(
-        stream: &mut std::iter::Peekable<crate::lexer::lexing_utils::TokenStream<T>>,
-    ) -> anyhow::Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Declaration {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
         match stream.peek() {
             Some(token) => match token.kind {
                 TokenType::Keyword(Keyword::Var) => {
@@ -65,10 +63,8 @@ impl Display for VarDecl {
     }
 }
 
-impl<T: Iterator<Item = Token>> Parseable<T> for VarDecl {
-    fn try_parse(
-        stream: &mut std::iter::Peekable<crate::lexer::lexing_utils::TokenStream<T>>,
-    ) -> anyhow::Result<Self> {
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for VarDecl {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
         let ident = match stream.peek() {
             Some(token) => match &token.kind {
                 TokenType::Ident(ident) => {

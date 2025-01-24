@@ -300,6 +300,25 @@ impl<T: Iterator<Item = Token>> TokenStream<T> {
     pub fn new(tokens: T) -> Self {
         Self { tokens }
     }
+
+    pub fn fork(&self) -> Self
+    where
+        T: Clone,
+    {
+        Self::new(self.tokens.clone())
+    }
+
+    pub fn join(&mut self, fork: Self) {
+        self.tokens = fork.tokens;
+    }
+
+    pub fn peek(&self) -> Option<Token>
+    where
+        T: Clone,
+    {
+        let mut fork = self.tokens.clone();
+        fork.next()
+    }
 }
 
 impl<T: Iterator<Item = Token>> Iterator for TokenStream<T> {
