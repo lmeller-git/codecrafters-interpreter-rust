@@ -3,7 +3,9 @@ use std::fmt::Display;
 
 use super::{
     declaration::{Declaration, VarDecl},
-    expr::{Assignment, Comparison, Equality, Expr, Factor, Primary, Term, Unary},
+    expr::{
+        Assignment, Comparison, Equality, Expr, Factor, LogicAnd, LogicOr, Primary, Term, Unary,
+    },
     stmt::{Block, IfStmt, PrintStmt, Stmt},
     Parser,
 };
@@ -43,6 +45,7 @@ impl<T: Iterator<Item = Token> + Clone> Parser<T> {
         let mut errors = Vec::new();
         let mut ast = Ast::default();
         while let Some(next_token) = self.tokens.peek() {
+            // println!("{}", next_token);
             if next_token.kind == TokenType::Eof {
                 break;
             }
@@ -124,4 +127,6 @@ pub trait Visitor: Sized {
     fn visit_assignment(&mut self, assignment: &Assignment) -> Self::Output;
     fn visit_block(&mut self, block: &Block) -> Self::Output;
     fn visit_if_stmt(&mut self, if_stmt: &IfStmt) -> Self::Output;
+    fn visit_logic_or(&mut self, logic_or: &LogicOr) -> Self::Output;
+    fn visit_logic_and(&mut self, logic_and: &LogicAnd) -> Self::Output;
 }

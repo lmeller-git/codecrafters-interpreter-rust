@@ -209,6 +209,12 @@ fn parse_ident(
             _ => break,
         }
     }
+    if acc == "and" {
+        return Ok(TokenType::And);
+    }
+    if acc == "or" {
+        return Ok(TokenType::Or);
+    }
     if let Some(keyword) = keywords.get(&acc) {
         return Ok(TokenType::Keyword(*keyword));
     }

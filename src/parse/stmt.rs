@@ -175,7 +175,23 @@ impl<V: Visitor> Visitable<V> for IfStmt {
 impl<T: Iterator<Item = Token> + Clone> Parseable<T> for IfStmt {
     fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
         // parentheses ?
+        /*
+        if let Some(next) = stream.peek() {
+            if next.kind == TokenType::OpenParen {
+                stream.next();
+            }
+        }
+        */
+        // println!("{:?}", stream.peek());
         let cond = Expr::try_parse(stream)?;
+        // println!("hmm");
+        /*
+        if let Some(next) = stream.peek() {
+            if next.kind == TokenType::CloseParen {
+                stream.next();
+            }
+        }
+        */
         let then_branch = Box::new(Stmt::try_parse(stream)?);
         let else_branch = if let Some(t) = stream.peek() {
             if t.kind == TokenType::Keyword(Keyword::Else) {

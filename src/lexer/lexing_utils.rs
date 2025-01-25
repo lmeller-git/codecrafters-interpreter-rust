@@ -150,6 +150,8 @@ impl Display for TokenType {
             Self::Keyword(key) => write!(f, "{:?}", key),
             Self::Literal(lit) => write!(f, "{}", lit),
             Self::MultiLineComment(_) | Self::SingleLineComment(_) => Ok(()),
+            Self::Or => write!(f, "OR or"),
+            Self::And => write!(f, "AND and"),
             _ => write!(f, "Not implemented"),
         }?;
         Ok(())

@@ -98,6 +98,41 @@ impl Visitor for TreeWalker {
     fn visit_expr(&mut self, expr: &crate::parse::expr::Expr) -> Self::Output {
         expr.assignment.accept(self)
     }
+
+    fn visit_logic_or(&mut self, logic_or: &crate::parse::expr::LogicOr) -> Self::Output {
+        if logic_or.rhs.is_empty() {
+            return logic_or.lhs.accept(self);
+        }
+        let lhs = logic_or.lhs.accept(self)?;
+        if is_true(&lhs)? {
+            return Ok(lhs);
+        }
+        for v in &logic_or.rhs {
+            let v = v.accept(self)?;
+            if is_true(&v)? {
+                return Ok(v);
+            }
+        }
+
+        Ok(LoxType::Bool(false))
+    }
+
+    fn visit_logic_and(&mut self, logic_and: &crate::parse::expr::LogicAnd) -> Self::Output {
+        if logic_and.rhs.is_empty() {
+            return logic_and.lhs.accept(self);
+        }
+        if !is_true(&logic_and.lhs.accept(self)?)? {
+            return Ok(LoxType::Bool(false));
+        }
+        for v in &logic_and.rhs {
+            if !is_true(&v.accept(self)?)? {
+                return Ok(LoxType::Bool(false));
+            }
+        }
+
+        Ok(LoxType::Bool(true))
+    }
+
     fn visit_equality(&mut self, eq: &crate::parse::expr::Equality) -> Self::Output {
         let rhs: LoxType = eq.rhs.accept(self)?;
         match &eq.lhs {
@@ -173,7 +208,7 @@ impl Visitor for TreeWalker {
                 self.env.borrow_mut().assign(ident, to.clone())?;
                 Ok(to)
             }
-            Assignment::Equality(eq) => eq.accept(self),
+            Assignment::Or(eq) => eq.accept(self),
         }
     }
 }

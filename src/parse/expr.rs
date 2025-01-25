@@ -4,7 +4,7 @@ use super::{
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
-use std::{fmt::Display, iter::Peekable};
+use std::{char::ToUppercase, fmt::Display};
 
 #[derive(Default, Debug)]
 pub struct Expr {
@@ -14,7 +14,19 @@ pub struct Expr {
 #[derive(Debug)]
 pub enum Assignment {
     Assignment(String, Box<Assignment>),
-    Equality(Equality),
+    Or(LogicOr),
+}
+
+#[derive(Default, Debug)]
+pub struct LogicOr {
+    pub lhs: LogicAnd,
+    pub rhs: Vec<LogicAnd>,
+}
+
+#[derive(Debug, Default)]
+pub struct LogicAnd {
+    pub lhs: Equality,
+    pub rhs: Vec<Equality>,
 }
 
 #[derive(Default, Debug)]
@@ -55,7 +67,7 @@ pub enum Primary {
 
 impl Default for Assignment {
     fn default() -> Self {
-        Self::Equality(Equality::default())
+        Self::Or(LogicOr::default())
     }
 }
 
@@ -81,8 +93,28 @@ impl Display for Assignment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Assignment(ident, to) => write!(f, "{} = {}", ident, to),
-            Self::Equality(eq) => write!(f, "{}", eq),
+            Self::Or(o) => write!(f, "{}", o),
         }
+    }
+}
+
+impl Display for LogicOr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.lhs)?;
+        for l in &self.rhs {
+            write!(f, " or {}", l)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for LogicAnd {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.lhs)?;
+        for l in &self.rhs {
+            write!(f, " and {}", l)?;
+        }
+        Ok(())
     }
 }
 
@@ -162,6 +194,18 @@ impl<V: Visitor> Visitable<V> for Assignment {
     }
 }
 
+impl<V: Visitor> Visitable<V> for LogicOr {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_logic_or(self)
+    }
+}
+
+impl<V: Visitor> Visitable<V> for LogicAnd {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_logic_and(self)
+    }
+}
+
 impl<V: Visitor> Visitable<V> for Equality {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_equality(self)
@@ -208,12 +252,12 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Assignment {
     fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         let mut fork = stream.fork();
 
-        match Equality::try_parse(&mut fork) {
+        match LogicOr::try_parse(&mut fork) {
             Ok(eq) => match fork.peek() {
                 Some(token) if token.kind == TokenType::Eq => {}
                 _ => {
                     stream.join(fork);
-                    return Ok(Self::Equality(eq));
+                    return Ok(Self::Or(eq));
                 }
             },
             Err(e) => match e.downcast_ref() {
@@ -243,6 +287,38 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Assignment {
 
         let expr = Assignment::try_parse(stream)?;
         Ok(Self::Assignment(ident, Box::new(expr)))
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for LogicOr {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
+        let lhs = LogicAnd::try_parse(stream)?;
+        let mut rhs = Vec::new();
+        while let Some(next) = stream.peek() {
+            if next.kind == TokenType::Or {
+                stream.next();
+                rhs.push(LogicAnd::try_parse(stream)?);
+            } else {
+                break;
+            }
+        }
+        Ok(Self { rhs, lhs })
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for LogicAnd {
+    fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
+        let lhs = Equality::try_parse(stream)?;
+        let mut rhs = Vec::new();
+        while let Some(next) = stream.peek() {
+            if next.kind == TokenType::And {
+                stream.next();
+                rhs.push(Equality::try_parse(stream)?);
+            } else {
+                break;
+            }
+        }
+        Ok(Self { rhs, lhs })
     }
 }
 
