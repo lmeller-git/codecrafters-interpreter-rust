@@ -17,6 +17,7 @@ pub enum Stmt {
     Print(PrintStmt),
     Block(Block),
     Cond(IfStmt),
+    While(WhileStmt),
 }
 
 impl Default for Stmt {
@@ -32,6 +33,7 @@ impl Display for Stmt {
             Self::Print(p) => write!(f, "{}", p),
             Self::Block(b) => write!(f, "{}", b),
             Self::Cond(i) => write!(f, "{}", i),
+            Self::While(w) => write!(f, "{}", w),
         }
     }
 }
@@ -60,7 +62,11 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Stmt {
                         let if_stmt = Self::Cond(IfStmt::try_parse(stream)?);
                         Ok(if_stmt)
                     }
-
+                    Keyword::While => {
+                        stream.next();
+                        let while_stmt = Self::While(WhileStmt::try_parse(stream)?);
+                        Ok(while_stmt)
+                    }
                     _ => Err(ParseError::InvalidToken(t.clone()).into()),
                 },
                 TokenType::OpenBrace => {
@@ -174,24 +180,8 @@ impl<V: Visitor> Visitable<V> for IfStmt {
 
 impl<T: Iterator<Item = Token> + Clone> Parseable<T> for IfStmt {
     fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
-        // parentheses ?
-        /*
-        if let Some(next) = stream.peek() {
-            if next.kind == TokenType::OpenParen {
-                stream.next();
-            }
-        }
-        */
-        // println!("{:?}", stream.peek());
         let cond = Expr::try_parse(stream)?;
-        // println!("hmm");
-        /*
-        if let Some(next) = stream.peek() {
-            if next.kind == TokenType::CloseParen {
-                stream.next();
-            }
-        }
-        */
+
         let then_branch = Box::new(Stmt::try_parse(stream)?);
         let else_branch = if let Some(t) = stream.peek() {
             if t.kind == TokenType::Keyword(Keyword::Else) {
@@ -215,5 +205,31 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for IfStmt {
 impl Display for IfStmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(())
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct WhileStmt {
+    pub cond: Expr,
+    pub body: Box<Stmt>,
+}
+
+impl Display for WhileStmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for WhileStmt {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
+        let cond = Expr::try_parse(stream)?;
+        let body = Box::new(Stmt::try_parse(stream)?);
+        Ok(Self { cond, body })
+    }
+}
+
+impl<V: Visitor> Visitable<V> for WhileStmt {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_while(self)
     }
 }
