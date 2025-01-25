@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::{
     environment::Environment,
-    ops::{binary_ops, unary_ops},
+    ops::{
+        binary_ops,
+        unary_ops::{self, is_true},
+    },
     Evaluator, RuntimeError,
 };
 use crate::{
@@ -72,6 +75,17 @@ impl Visitor for TreeWalker {
             Stmt::Expr(e) => e.accept(self),
             Stmt::Print(p) => p.accept(self),
             Stmt::Block(b) => b.accept(self),
+            Stmt::Cond(i) => i.accept(self),
+        }
+    }
+
+    fn visit_if_stmt(&mut self, if_stmt: &crate::parse::stmt::IfStmt) -> Self::Output {
+        if is_true(&if_stmt.cond.accept(self)?)? {
+            if_stmt.then_branch.accept(self)
+        } else if let Some(cond) = &if_stmt.else_branch {
+            cond.accept(self)
+        } else {
+            Ok(LoxType::default())
         }
     }
 

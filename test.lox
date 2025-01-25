@@ -1,6 +1,16 @@
-h = 6;
+var h;
+print h = "hello";
+{
+	var x = "world";
+	var y = 42;
+	var z;
+	x = " " + x;
 
-var x = 5;
-var y = 4;
-x = (y = 8);
-print x;
+	z = x + x;
+	print h + x;
+	{
+		var y = 673268;
+	}
+	print "the answer is ";
+	print y;
+}

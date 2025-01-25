@@ -22,3 +22,14 @@ pub fn not(val: &LoxType) -> Result<LoxType> {
         LoxType::Unit => Ok(LoxType::Unit),
     }
 }
+
+pub fn is_true(val: &LoxType) -> Result<bool> {
+    match val {
+        LoxType::Number(_) | LoxType::String(_) => Ok(true),
+        LoxType::Nil => Ok(false),
+        LoxType::Bool(b) => Ok(*b),
+        LoxType::Unit => {
+            Err(RuntimeError::IllegalOp("unit value neither true nor false".into()).into())
+        }
+    }
+}

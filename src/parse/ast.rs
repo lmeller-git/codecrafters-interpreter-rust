@@ -4,7 +4,7 @@ use std::fmt::Display;
 use super::{
     declaration::{Declaration, VarDecl},
     expr::{Assignment, Comparison, Equality, Expr, Factor, Primary, Term, Unary},
-    stmt::{Block, PrintStmt, Stmt},
+    stmt::{Block, IfStmt, PrintStmt, Stmt},
     Parser,
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
@@ -123,4 +123,5 @@ pub trait Visitor: Sized {
     fn visit_vardecl(&mut self, var_decl: &VarDecl) -> Self::Output;
     fn visit_assignment(&mut self, assignment: &Assignment) -> Self::Output;
     fn visit_block(&mut self, block: &Block) -> Self::Output;
+    fn visit_if_stmt(&mut self, if_stmt: &IfStmt) -> Self::Output;
 }
