@@ -130,7 +130,7 @@ impl Visitor for TreeWalker {
             }
         }
 
-        Ok(LoxType::Bool(true))
+        logic_and.rhs.last().unwrap().accept(self)
     }
 
     fn visit_equality(&mut self, eq: &crate::parse::expr::Equality) -> Self::Output {
