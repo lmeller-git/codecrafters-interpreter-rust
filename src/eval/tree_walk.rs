@@ -77,7 +77,17 @@ impl Visitor for TreeWalker {
             Stmt::Block(b) => b.accept(self),
             Stmt::Cond(i) => i.accept(self),
             Stmt::While(w) => w.accept(self),
+            Stmt::For(fo) => fo.accept(self),
         }
+    }
+
+    fn visit_for(&mut self, for_stmt: &crate::parse::stmt::ForStmt) -> Self::Output {
+        for_stmt.init.accept(self)?;
+        while is_true(&for_stmt.cond.accept(self)?)? {
+            for_stmt.body.accept(self)?;
+            for_stmt.incr.accept(self)?;
+        }
+        Ok(LoxType::default())
     }
 
     fn visit_while(&mut self, while_stmt: &crate::parse::stmt::WhileStmt) -> Self::Output {

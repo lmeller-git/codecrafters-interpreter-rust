@@ -6,7 +6,7 @@ use super::{
     expr::{
         Assignment, Comparison, Equality, Expr, Factor, LogicAnd, LogicOr, Primary, Term, Unary,
     },
-    stmt::{Block, IfStmt, PrintStmt, Stmt, WhileStmt},
+    stmt::{Block, ForStmt, IfStmt, PrintStmt, Stmt, WhileStmt},
     Parser,
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
@@ -130,4 +130,5 @@ pub trait Visitor: Sized {
     fn visit_logic_or(&mut self, logic_or: &LogicOr) -> Self::Output;
     fn visit_logic_and(&mut self, logic_and: &LogicAnd) -> Self::Output;
     fn visit_while(&mut self, while_stmt: &WhileStmt) -> Self::Output;
+    fn visit_for(&mut self, for_stmt: &ForStmt) -> Self::Output;
 }

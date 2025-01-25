@@ -18,6 +18,7 @@ pub enum Stmt {
     Block(Block),
     Cond(IfStmt),
     While(WhileStmt),
+    For(ForStmt),
 }
 
 impl Default for Stmt {
@@ -34,6 +35,7 @@ impl Display for Stmt {
             Self::Block(b) => write!(f, "{}", b),
             Self::Cond(i) => write!(f, "{}", i),
             Self::While(w) => write!(f, "{}", w),
+            _ => write!(f, ""),
         }
     }
 }
@@ -66,6 +68,11 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Stmt {
                         stream.next();
                         let while_stmt = Self::While(WhileStmt::try_parse(stream)?);
                         Ok(while_stmt)
+                    }
+                    Keyword::For => {
+                        stream.next();
+                        let stmt = ForStmt::try_parse(stream)?;
+                        Ok(Self::For(stmt))
                     }
                     _ => Err(ParseError::InvalidToken(t.clone()).into()),
                 },
@@ -231,5 +238,70 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for WhileStmt {
 impl<V: Visitor> Visitable<V> for WhileStmt {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_while(self)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ForStmt {
+    pub init: Box<Declaration>,
+    pub cond: Expr,
+    pub incr: Expr,
+    pub body: Box<Stmt>,
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for ForStmt {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::OpenParen {
+                stream.next();
+            }
+        }
+        let init = if let Some(t) = stream.peek() {
+            if t.kind == TokenType::Semi {
+                stream.next();
+                Box::default()
+            } else {
+                Box::new(Declaration::try_parse(stream)?)
+            }
+        } else {
+            Box::default()
+        };
+
+        let cond = Expr::try_parse(stream)?;
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::Semi {
+                stream.next();
+            }
+        }
+        let incr = match Expr::try_parse(stream) {
+            Ok(e) => e,
+            Err(e) => match e.downcast_ref().unwrap() {
+                ParseError::InvalidToken(t) if t.kind == TokenType::CloseParen => Expr::default(),
+                _ => return Err(e),
+            },
+        };
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::Semi {
+                stream.next();
+            }
+        }
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::CloseParen {
+                stream.next();
+            }
+        }
+        let body = Box::new(Stmt::try_parse(stream)?);
+        Ok(Self {
+            init,
+            cond,
+            incr,
+            body,
+        })
+    }
+}
+
+impl<V: Visitor> Visitable<V> for ForStmt {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_for(self)
     }
 }
