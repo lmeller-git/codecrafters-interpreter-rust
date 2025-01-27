@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use bytes::BufMut;
-
 use crate::lexer::lexing_utils::{Keyword, Token, TokenType};
 
 use super::{

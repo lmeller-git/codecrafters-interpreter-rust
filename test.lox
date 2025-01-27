@@ -1,3 +1,5 @@
+print clock();
+
 print "hello";
 print true or false;
 print "huhu";

@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use anyhow::Result;
 
-use crate::core::types::LoxType;
+use crate::{core::types::LoxType, parse::declaration::FnDecl};
 
 use super::RuntimeError;
 
@@ -49,4 +49,9 @@ impl Environment {
             Some(val) => Ok(val.clone()),
         }
     }
+}
+
+//TODO
+pub struct FuncEnv {
+    functions: HashMap<String, FnDecl>,
 }

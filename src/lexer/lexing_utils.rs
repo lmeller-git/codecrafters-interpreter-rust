@@ -321,6 +321,25 @@ impl<T: Iterator<Item = Token>> TokenStream<T> {
         let mut fork = self.tokens.clone();
         fork.next()
     }
+
+    pub fn peek2(&self) -> Option<Token>
+    where
+        T: Clone,
+    {
+        let mut fork = self.tokens.clone();
+        fork.next();
+        fork.next()
+    }
+
+    pub fn peek3(&self) -> Option<Token>
+    where
+        T: Clone,
+    {
+        let mut fork = self.tokens.clone();
+        fork.next();
+        fork.next();
+        fork.next()
+    }
 }
 
 impl<T: Iterator<Item = Token>> Iterator for TokenStream<T> {

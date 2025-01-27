@@ -11,6 +11,7 @@ use super::{
 use crate::{
     core::types::LoxType,
     lexer::lexing_utils::{Keyword, LiteralKind, TokenType},
+    lox_std::{exe_builtin, print},
     parse::{
         ast::{Visitable, Visitor},
         declaration::Declaration,
@@ -57,7 +58,12 @@ impl Visitor for TreeWalker {
         match decl {
             Declaration::Var(v) => v.accept(self),
             Declaration::Stmt(s) => s.accept(self),
+            Declaration::Fn(f) => f.accept(self),
         }
+    }
+
+    fn visit_fndecl(&mut self, fndecl: &crate::parse::declaration::FnDecl) -> Self::Output {
+        todo!()
     }
 
     fn visit_vardecl(&mut self, var_decl: &crate::parse::declaration::VarDecl) -> Self::Output {
@@ -109,7 +115,7 @@ impl Visitor for TreeWalker {
 
     fn visit_printstmt(&mut self, p_stmt: &crate::parse::stmt::PrintStmt) -> Self::Output {
         let res = p_stmt.args.accept(self)?;
-        println!("{}", res);
+        print(&format!("{}\n", res));
         Ok(LoxType::default())
     }
 
@@ -211,7 +217,12 @@ impl Visitor for TreeWalker {
     fn visit_primary(&mut self, primary: &crate::parse::expr::Primary) -> Self::Output {
         match primary {
             Primary::Token(token) => match token.kind {
-                TokenType::Ident(ref ident) => self.env.borrow().get(ident),
+                TokenType::Ident(ref ident) => {
+                    if let Ok(res) = exe_builtin(ident) {
+                        return Ok(res);
+                    }
+                    self.env.borrow().get(ident)
+                }
                 TokenType::Literal(_) | TokenType::Keyword(_) => Ok(token.kind.clone().into()),
                 _ => Err(RuntimeError::ImpossibleOP(token.kind.clone()).into()),
             },

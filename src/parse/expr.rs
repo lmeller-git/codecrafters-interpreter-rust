@@ -4,7 +4,7 @@ use super::{
 };
 use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
-use std::{char::ToUppercase, fmt::Display};
+use std::fmt::Display;
 
 #[derive(Default, Debug)]
 pub struct Expr {
@@ -441,8 +441,23 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
     fn try_parse(stream: &mut TokenStream<T>) -> Result<Self> {
         match stream.peek() {
             Some(token) => match token.kind {
+                TokenType::Ident(_) => {
+                    if let (Some(n1), Some(n2)) = (stream.peek2(), stream.peek3()) {
+                        match (n1.kind, n2.kind) {
+                            (TokenType::OpenParen, TokenType::CloseParen) => {
+                                let i = stream.next().unwrap();
+                                stream.next();
+                                stream.next();
+                                Ok(Self::Token(i))
+                            }
+                            _ => Ok(Self::Token(stream.next().unwrap())),
+                        }
+                    } else {
+                        Ok(Self::Token(stream.next().unwrap()))
+                    }
+                }
+
                 TokenType::Literal(_)
-                | TokenType::Ident(_)
                 | TokenType::Keyword(Keyword::False | Keyword::Nil | Keyword::True) => {
                     Ok(Self::Token(stream.next().unwrap()))
                 }

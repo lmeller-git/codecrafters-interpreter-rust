@@ -1,6 +1,7 @@
 mod core;
 mod eval;
 mod lexer;
+mod lox_std;
 mod parse;
 use anyhow::Result;
 use eval::tree_walk::TreeWalker;

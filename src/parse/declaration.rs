@@ -13,6 +13,7 @@ use super::{
 pub enum Declaration {
     Var(VarDecl),
     Stmt(Stmt),
+    Fn(FnDecl),
 }
 
 impl Display for Declaration {
@@ -20,6 +21,7 @@ impl Display for Declaration {
         match self {
             Self::Var(v) => write!(f, "{}", v),
             Self::Stmt(s) => write!(f, "{}", s),
+            _ => write!(f, ""),
         }
     }
 }
@@ -37,6 +39,10 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Declaration {
                 TokenType::Keyword(Keyword::Var) => {
                     stream.next();
                     Ok(Self::Var(VarDecl::try_parse(stream)?))
+                }
+                TokenType::Keyword(Keyword::Fun) => {
+                    stream.next();
+                    Ok(Self::Fn(FnDecl::try_parse(stream)?))
                 }
                 _ => Ok(Self::Stmt(Stmt::try_parse(stream)?)),
             },
@@ -97,5 +103,57 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for VarDecl {
 impl<V: Visitor> Visitable<V> for VarDecl {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_vardecl(self)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct FnDecl {
+    ident: String,
+    args: Vec<String>,
+    body: Box<Declaration>,
+}
+
+impl Display for FnDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
+
+impl<V: Visitor> Visitable<V> for FnDecl {
+    fn accept(&self, visitor: &mut V) -> <V as Visitor>::Output {
+        visitor.visit_fndecl(self)
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for FnDecl {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
+        let ident = if let Some(t) = stream.peek() {
+            match t.kind {
+                TokenType::Ident(s) => {
+                    stream.next();
+                    s.to_string()
+                }
+                _ => return Err(ParseError::InvalidToken(t).into()),
+            }
+        } else {
+            return Err(ParseError::UnexpectedNone.into());
+        };
+        let mut args = Vec::new();
+        while let Some(t) = stream.peek() {
+            match t.kind {
+                TokenType::Ident(s) => {
+                    stream.next();
+                    args.push(s.to_string())
+                }
+                TokenType::CloseBrace => {
+                    stream.next();
+                    break;
+                }
+                TokenType::Comma => _ = stream.next(),
+                _ => return Err(ParseError::InvalidToken(t).into()),
+            }
+        }
+        let body = Box::new(Declaration::try_parse(stream)?);
+        Ok(Self { ident, args, body })
     }
 }
