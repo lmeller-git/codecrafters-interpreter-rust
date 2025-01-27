@@ -9,7 +9,7 @@ use super::{
     ParseError,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Declaration {
     Var(VarDecl),
     Stmt(Stmt),
@@ -57,7 +57,7 @@ impl<V: Visitor> Visitable<V> for Declaration {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct VarDecl {
     pub ident: String,
     pub value: Option<Expr>,
@@ -106,11 +106,11 @@ impl<V: Visitor> Visitable<V> for VarDecl {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct FnDecl {
-    ident: String,
-    args: Vec<String>,
-    body: Box<Declaration>,
+    pub ident: String,
+    pub args: Vec<String>,
+    pub body: Box<Declaration>,
 }
 
 impl Display for FnDecl {
@@ -138,6 +138,11 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for FnDecl {
         } else {
             return Err(ParseError::UnexpectedNone.into());
         };
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::OpenParen {
+                _ = stream.next();
+            }
+        }
         let mut args = Vec::new();
         while let Some(t) = stream.peek() {
             match t.kind {
@@ -145,7 +150,7 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for FnDecl {
                     stream.next();
                     args.push(s.to_string())
                 }
-                TokenType::CloseBrace => {
+                TokenType::CloseParen => {
                     stream.next();
                     break;
                 }

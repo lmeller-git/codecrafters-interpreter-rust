@@ -1,7 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, str::FromStr};
 
 use super::{
-    environment::Environment,
+    environment::{Environment, FuncEnv},
     ops::{
         binary_ops,
         unary_ops::{self, is_true},
@@ -9,9 +9,9 @@ use super::{
     Evaluator, RuntimeError,
 };
 use crate::{
-    core::types::LoxType,
+    core::types::{string::LoxString, LoxType},
     lexer::lexing_utils::{Keyword, LiteralKind, TokenType},
-    lox_std::{exe_builtin, print},
+    lox_std::{exe_builtin, is_builtin, print},
     parse::{
         ast::{Visitable, Visitor},
         declaration::Declaration,
@@ -23,6 +23,7 @@ use anyhow::Result;
 
 pub struct TreeWalker {
     env: Rc<RefCell<Environment>>,
+    func_env: FuncEnv,
 }
 
 impl Evaluator for TreeWalker {
@@ -63,7 +64,8 @@ impl Visitor for TreeWalker {
     }
 
     fn visit_fndecl(&mut self, fndecl: &crate::parse::declaration::FnDecl) -> Self::Output {
-        todo!()
+        self.func_env.define(fndecl.clone());
+        Ok(LoxType::default())
     }
 
     fn visit_vardecl(&mut self, var_decl: &crate::parse::declaration::VarDecl) -> Self::Output {
@@ -218,14 +220,44 @@ impl Visitor for TreeWalker {
         match primary {
             Primary::Token(token) => match token.kind {
                 TokenType::Ident(ref ident) => {
-                    if let Ok(res) = exe_builtin(ident) {
-                        return Ok(res);
+                    if is_builtin(ident) {
+                        return Ok(LoxType::String(
+                            LoxString::from_str(&format!("<fn {}>", ident)).unwrap(),
+                        ));
                     }
+                    if self.func_env.get(ident).is_ok() {
+                        return Ok(LoxType::String(
+                            LoxString::from_str(&format!("<fn {}>", ident)).unwrap(),
+                        ));
+                    }
+
                     self.env.borrow().get(ident)
                 }
                 TokenType::Literal(_) | TokenType::Keyword(_) => Ok(token.kind.clone().into()),
                 _ => Err(RuntimeError::ImpossibleOP(token.kind.clone()).into()),
             },
+            Primary::Call(funccall) => {
+                if let Ok(res) = exe_builtin(&funccall.ident) {
+                    return Ok(res);
+                }
+                let r = self.func_env.get(&funccall.ident)?.clone();
+                // execute function
+                // define new scope => call block.accept self in new scope => restore old scope
+                let prev_env_state = self.env.clone();
+                let new_env = Rc::new(RefCell::new(
+                    Environment::new().with_parent(prev_env_state.clone()),
+                ));
+                for (ident, val) in r.args.iter().zip(funccall.args.iter()) {
+                    new_env
+                        .borrow_mut()
+                        .define(ident.clone(), val.accept(self)?);
+                }
+                self.env = new_env;
+                let res = r.body.accept(self);
+
+                self.env = prev_env_state;
+                res
+            }
             Primary::Grouping(expr) => expr.accept(self),
         }
     }
@@ -246,6 +278,7 @@ impl TreeWalker {
     pub fn new() -> Self {
         Self {
             env: Rc::new(RefCell::new(Environment::new())),
+            func_env: FuncEnv::new(),
         }
     }
 }

@@ -9,7 +9,7 @@ use super::{
     ParseError,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Stmt {
     Expr(Expr),
     Print(PrintStmt),
@@ -98,7 +98,7 @@ impl<V: Visitor> Visitable<V> for Stmt {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct PrintStmt {
     pub args: Expr,
 }
@@ -132,7 +132,7 @@ impl<V: Visitor> Visitable<V> for PrintStmt {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Block {
     pub decls: Vec<Declaration>,
 }
@@ -170,7 +170,7 @@ impl<V: Visitor> Visitable<V> for Block {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct IfStmt {
     pub cond: Expr,
     pub then_branch: Box<Stmt>,
@@ -213,7 +213,7 @@ impl Display for IfStmt {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct WhileStmt {
     pub cond: Expr,
     pub body: Box<Stmt>,
@@ -239,7 +239,7 @@ impl<V: Visitor> Visitable<V> for WhileStmt {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ForStmt {
     pub init: Box<Declaration>,
     pub cond: Expr,

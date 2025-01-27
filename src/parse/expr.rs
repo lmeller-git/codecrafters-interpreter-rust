@@ -6,63 +6,70 @@ use crate::lexer::lexing_utils::{Keyword, Token, TokenStream, TokenType};
 use anyhow::Result;
 use std::fmt::Display;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Expr {
     pub assignment: Assignment,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Assignment {
     Assignment(String, Box<Assignment>),
     Or(LogicOr),
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct LogicOr {
     pub lhs: LogicAnd,
     pub rhs: Vec<LogicAnd>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct LogicAnd {
     pub lhs: Equality,
     pub rhs: Vec<Equality>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Equality {
     pub rhs: Comparison,
     pub lhs: Option<(Token, Box<Equality>)>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Comparison {
     pub rhs: Term,
     pub lhs: Option<(Token, Box<Comparison>)>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Term {
     pub rhs: Factor,
     pub lhs: Option<(Token, Box<Term>)>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Factor {
     pub rhs: Unary,
     pub lhs: Option<(Token, Box<Factor>)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Unary {
     Unary(Token, Box<Unary>),
     Primary(Box<Primary>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Primary {
     Token(Token),
+    Call(FuncCall),
     Grouping(Expr),
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct FuncCall {
+    pub args: Vec<Expr>,
+    pub ident: String,
 }
 
 impl Default for Assignment {
@@ -177,6 +184,7 @@ impl Display for Primary {
         match self {
             Self::Token(token) => write!(f, "{:?}", token.kind)?,
             Self::Grouping(expr) => write!(f, "(group {})", expr)?,
+            Self::Call(_) => write!(f, "call")?,
         }
         Ok(())
     }
@@ -442,15 +450,48 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
         match stream.peek() {
             Some(token) => match token.kind {
                 TokenType::Ident(_) => {
-                    if let (Some(n1), Some(n2)) = (stream.peek2(), stream.peek3()) {
-                        match (n1.kind, n2.kind) {
-                            (TokenType::OpenParen, TokenType::CloseParen) => {
-                                let i = stream.next().unwrap();
-                                stream.next();
-                                stream.next();
-                                Ok(Self::Token(i))
+                    if let Some(n1) = stream.peek2() {
+                        if n1.kind == TokenType::OpenParen {
+                            let ident = if let Some(i) = stream.next() {
+                                match i.kind {
+                                    TokenType::Ident(s) => s,
+                                    _ => return Err(ParseError::InvalidToken(i.clone()).into()),
+                                }
+                            } else {
+                                return Err(ParseError::UnexpectedNone.into());
+                            };
+                            _ = stream.next();
+                            let mut args = Vec::new();
+                            while let Some(next) = stream.peek() {
+                                match next.kind {
+                                    TokenType::CloseParen => {
+                                        stream.next();
+                                        break;
+                                    }
+                                    TokenType::Comma => _ = stream.next(),
+                                    _ => match Expr::try_parse(stream) {
+                                        Ok(e) => args.push(e),
+                                        Err(e) => match e.downcast_ref() {
+                                            Some(ParseError::InvalidToken(t))
+                                                if t.kind == TokenType::CloseParen =>
+                                            {
+                                                break
+                                            }
+
+                                            Some(ParseError::InvalidToken(t))
+                                                if t.kind == TokenType::Comma =>
+                                            {
+                                                _ = stream.next()
+                                            }
+
+                                            _ => return Err(e),
+                                        },
+                                    },
+                                }
                             }
-                            _ => Ok(Self::Token(stream.next().unwrap())),
+                            Ok(Self::Call(FuncCall { args, ident }))
+                        } else {
+                            Ok(Self::Token(stream.next().unwrap()))
                         }
                     } else {
                         Ok(Self::Token(stream.next().unwrap()))

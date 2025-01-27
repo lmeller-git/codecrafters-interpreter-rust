@@ -52,6 +52,27 @@ impl Environment {
 }
 
 //TODO
+#[derive(Default, Debug)]
 pub struct FuncEnv {
     functions: HashMap<String, FnDecl>,
+}
+
+impl FuncEnv {
+    pub fn new() -> Self {
+        Self {
+            functions: HashMap::new(),
+        }
+    }
+
+    pub fn define(&mut self, func: FnDecl) {
+        _ = self.functions.insert(func.ident.clone(), func);
+    }
+
+    pub fn get(&self, ident: &str) -> Result<&FnDecl> {
+        if let Some(func) = self.functions.get(ident) {
+            Ok(func)
+        } else {
+            Err(RuntimeError::UnknownVar(ident.into()).into())
+        }
+    }
 }
