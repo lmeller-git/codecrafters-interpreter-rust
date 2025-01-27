@@ -17,6 +17,7 @@ pub enum Stmt {
     Cond(IfStmt),
     While(WhileStmt),
     For(ForStmt),
+    Return(Return),
 }
 
 impl Default for Stmt {
@@ -56,6 +57,16 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Stmt {
                             }
                         }
                         Ok(expr)
+                    }
+                    Keyword::Return => {
+                        stream.next();
+                        let ret_stmt = Self::Return(Return::try_parse(stream)?);
+                        if let Some(t) = stream.peek() {
+                            if t.kind == TokenType::Semi {
+                                stream.next();
+                            }
+                        }
+                        Ok(ret_stmt)
                     }
                     Keyword::If => {
                         stream.next();
@@ -301,5 +312,28 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for ForStmt {
 impl<V: Visitor> Visitable<V> for ForStmt {
     fn accept(&self, visitor: &mut V) -> V::Output {
         visitor.visit_for(self)
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Return {
+    pub value: Expr,
+}
+
+impl<V: Visitor> Visitable<V> for Return {
+    fn accept(&self, visitor: &mut V) -> V::Output {
+        visitor.visit_return(self)
+    }
+}
+
+impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Return {
+    fn try_parse(stream: &mut crate::lexer::lexing_utils::TokenStream<T>) -> anyhow::Result<Self> {
+        if let Some(t) = stream.peek() {
+            if t.kind == TokenType::Semi {
+                return Ok(Self::default());
+            }
+        }
+        let value = Expr::try_parse(stream)?;
+        Ok(Self { value })
     }
 }

@@ -48,7 +48,13 @@ impl Visitor for TreeWalker {
         ));
 
         for decl in &block.decls {
-            self.evaluate(decl)?;
+            match self.evaluate(decl) {
+                Ok(_) => {}
+                Err(e) => match e.downcast_ref() {
+                    Some(RuntimeError::Return(res)) => return Ok(res.clone()),
+                    _ => return Err(e),
+                },
+            }
         }
 
         self.env = prev_env_state;
@@ -86,7 +92,12 @@ impl Visitor for TreeWalker {
             Stmt::Cond(i) => i.accept(self),
             Stmt::While(w) => w.accept(self),
             Stmt::For(fo) => fo.accept(self),
+            Stmt::Return(r) => Err(RuntimeError::Return(r.accept(self)?).into()),
         }
+    }
+
+    fn visit_return(&mut self, stmt: &crate::parse::stmt::Return) -> Self::Output {
+        stmt.value.accept(self)
     }
 
     fn visit_for(&mut self, for_stmt: &crate::parse::stmt::ForStmt) -> Self::Output {

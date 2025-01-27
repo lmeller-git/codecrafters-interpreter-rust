@@ -57,4 +57,6 @@ pub enum RuntimeError {
     ImpossibleOP(TokenType),
     #[error("Uninitialized variable {0}")]
     UnknownVar(String),
+    #[error("return statement hit")]
+    Return(LoxType),
 }
