@@ -148,7 +148,12 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for FnDecl {
             match t.kind {
                 TokenType::Ident(s) => {
                     stream.next();
-                    args.push(s.to_string())
+                    args.push(s.to_string());
+                    if let Some(n) = stream.peek() {
+                        if n.kind != TokenType::Comma && n.kind != TokenType::CloseParen {
+                            return Err(ParseError::InvalidToken(n.clone()).into());
+                        }
+                    }
                 }
                 TokenType::CloseParen => {
                     stream.next();
@@ -156,6 +161,11 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for FnDecl {
                 }
                 TokenType::Comma => _ = stream.next(),
                 _ => return Err(ParseError::InvalidToken(t).into()),
+            }
+        }
+        if let Some(t) = stream.peek() {
+            if t.kind != TokenType::OpenBrace {
+                return Err(ParseError::InvalidToken(t.clone()).into());
             }
         }
         let body = Box::new(Declaration::try_parse(stream)?);
