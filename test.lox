@@ -1,4 +1,91 @@
-fun fib(n) {
+
+fun returnArg(arg) {
+  return arg;
+}
+
+fun returnFunCallWithArg(func, arg) {
+  return returnArg(func)(arg);
+}
+
+fun printArg(arg) {
+  print arg;
+}
+
+returnFunCallWithArg(printArg, "baz");
+
+/*fun makeFn(x) {
+	fun inner(z) {
+		return z * x;
+	}
+	return inner;
+}
+
+var x = 6;
+var res = makeFn(x);
+print res;
+var res2 = res(2);
+print res2;
+
+*/
+
+
+/*
+fun makeAdder(x) {
+   fun add(y) {
+     return x + y;
+   }
+   return add;
+ }
+
+ fun applyTwice(f, x) {
+   return f(f(x));
+ }
+
+ var addx = makeAdder(3);
+ var addy = makeAdder(3);
+
+ print applyTwice(addx, 3);
+ print applyTwice(addy, 3);
+
+*/
+/*fun ret_args(args) {
+	return args;
+}
+
+fun ret_func_call_arg(func, arg) {
+	print func;
+	print arg;
+	print ret_args(func);
+	return ret_args(func)(arg, "");
+}
+
+fun print_(arg, arg2) {
+	print arg;
+}
+
+ret_args(print_)("hello0", "hello123");
+
+print ret_args("hello1");
+
+print_(ret_args("hello2"), "");
+
+print ret_func_call_arg(print_, "hello3");
+*/
+
+/*
+var globalGreeting = "Hello";
+fun makeGreeter() {
+	fun greet(name) {
+		print globalGreeting + " " + name;
+	}
+	return greet;
+}
+
+var sayHello = makeGreeter();
+
+sayHello("louis");
+*/
+/*fun fib(n) {
 	if (n < 2) return n;
 	return fib(n - 2) + fib(n - 1);
 }
@@ -12,4 +99,4 @@ print clock();
 
 print "hello";
 print true or false;
-print "huhu";
+print "huhu";*/

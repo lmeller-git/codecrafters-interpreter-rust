@@ -20,6 +20,7 @@ pub fn not(val: &LoxType) -> Result<LoxType> {
         LoxType::Nil => Ok(LoxType::Bool(true)),
         LoxType::Bool(b) => Ok(LoxType::Bool(b.not())),
         LoxType::Unit => Ok(LoxType::Unit),
+        _ => Ok(LoxType::Unit),
     }
 }
 
@@ -31,5 +32,6 @@ pub fn is_true(val: &LoxType) -> Result<bool> {
         LoxType::Unit => {
             Err(RuntimeError::IllegalOp("unit value neither true nor false".into()).into())
         }
+        _ => Ok(false),
     }
 }

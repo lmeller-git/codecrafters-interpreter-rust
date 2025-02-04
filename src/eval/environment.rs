@@ -55,24 +55,37 @@ impl Environment {
 #[derive(Default, Debug)]
 pub struct FuncEnv {
     functions: HashMap<String, FnDecl>,
+    parent: Option<Rc<RefCell<FuncEnv>>>,
 }
 
 impl FuncEnv {
     pub fn new() -> Self {
         Self {
             functions: HashMap::new(),
+            parent: None,
         }
+    }
+    pub fn with_parent(mut self, parent: Rc<RefCell<FuncEnv>>) -> Self {
+        self.parent = Some(parent.clone());
+        self
+    }
+
+    pub fn assign(&mut self, func: FnDecl, ident: String) {
+        _ = self.functions.insert(ident, func);
     }
 
     pub fn define(&mut self, func: FnDecl) {
         _ = self.functions.insert(func.ident.clone(), func);
     }
 
-    pub fn get(&self, ident: &str) -> Result<&FnDecl> {
+    pub fn get(&self, ident: &str) -> Result<FnDecl> {
         if let Some(func) = self.functions.get(ident) {
-            Ok(func)
+            Ok(func.clone())
         } else {
-            Err(RuntimeError::UnknownVar(ident.into()).into())
+            match &self.parent {
+                Some(p) => p.borrow().get(ident),
+                None => Err(RuntimeError::UnknownVar(ident.into()).into()),
+            }
         }
     }
 }

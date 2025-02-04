@@ -70,6 +70,7 @@ pub enum Primary {
 pub struct FuncCall {
     pub args: Vec<Expr>,
     pub ident: String,
+    pub addl: Vec<Vec<Expr>>,
 }
 
 impl Default for Assignment {
@@ -184,8 +185,19 @@ impl Display for Primary {
         match self {
             Self::Token(token) => write!(f, "{:?}", token.kind)?,
             Self::Grouping(expr) => write!(f, "(group {})", expr)?,
-            Self::Call(_) => write!(f, "call")?,
+            Self::Call(func) => write!(f, "call: {}", func)?,
         }
+        Ok(())
+    }
+}
+
+impl Display for FuncCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "args: ")?;
+        for arg in &self.args {
+            write!(f, "{} ", arg)?;
+        }
+        write!(f, ", ident: {}", self.ident)?;
         Ok(())
     }
 }
@@ -451,6 +463,7 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
             Some(token) => match token.kind {
                 TokenType::Ident(_) => {
                     if let Some(n1) = stream.peek2() {
+                        //TODO verify + rewrite this mess
                         if n1.kind == TokenType::OpenParen {
                             let ident = if let Some(i) = stream.next() {
                                 match i.kind {
@@ -475,7 +488,8 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
                                             Some(ParseError::InvalidToken(t))
                                                 if t.kind == TokenType::CloseParen =>
                                             {
-                                                break
+                                                _ = stream.next();
+                                                break;
                                             }
 
                                             Some(ParseError::InvalidToken(t))
@@ -489,7 +503,43 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
                                     },
                                 }
                             }
-                            Ok(Self::Call(FuncCall { args, ident }))
+                            if let Some(t) = stream.peek() {
+                                if t.kind == TokenType::OpenParen {
+                                    //TODO somehow recursively build fun call chain: fun1(args)(args2)(args3), where fun1 returns fun2, and so on.
+                                    stream.next();
+                                    let mut addl = vec![Vec::new()];
+                                    while let Some(t) = stream.peek() {
+                                        match t.kind {
+                                            TokenType::Semi => {
+                                                stream.next();
+                                                break;
+                                            }
+                                            TokenType::Comma => _ = stream.next(),
+                                            TokenType::CloseParen => _ = stream.next(),
+                                            TokenType::OpenParen => addl.push(Vec::new()),
+                                            _ => match Expr::try_parse(stream) {
+                                                Ok(ex) => addl.last_mut().unwrap().push(ex),
+                                                Err(e) => match e.downcast_ref() {
+                                                    Some(ParseError::InvalidToken(t))
+                                                        if t.kind == TokenType::CloseParen
+                                                            || t.kind == TokenType::Comma =>
+                                                    {
+                                                        _ = stream.next()
+                                                    }
+
+                                                    _ => return Err(e),
+                                                },
+                                            },
+                                        }
+                                    }
+                                    return Ok(Self::Call(FuncCall { args, ident, addl }));
+                                }
+                            }
+                            Ok(Self::Call(FuncCall {
+                                args,
+                                ident,
+                                addl: Vec::new(),
+                            }))
                         } else {
                             Ok(Self::Token(stream.next().unwrap()))
                         }
@@ -520,6 +570,12 @@ impl<T: Iterator<Item = Token> + Clone> Parseable<T> for Primary {
             None => Err(ParseError::UnexpectedNone.into()),
         }
     }
+}
+
+fn func_call_stackM<T: Iterator<Item = Token> + Clone>(
+    stream: &mut TokenStream<T>,
+) -> Result<Primary> {
+    Ok(Primary::default())
 }
 
 /*

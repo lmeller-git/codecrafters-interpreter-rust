@@ -21,7 +21,7 @@ impl Display for Declaration {
         match self {
             Self::Var(v) => write!(f, "{}", v),
             Self::Stmt(s) => write!(f, "{}", s),
-            _ => write!(f, ""),
+            Self::Fn(fun) => write!(f, "{}", fun),
         }
     }
 }
@@ -115,7 +115,7 @@ pub struct FnDecl {
 
 impl Display for FnDecl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "")
+        write!(f, "<fn {}>", self.ident)
     }
 }
 

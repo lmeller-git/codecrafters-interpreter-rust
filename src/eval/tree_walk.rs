@@ -14,8 +14,8 @@ use crate::{
     lox_std::{exe_builtin, is_builtin, print},
     parse::{
         ast::{Visitable, Visitor},
-        declaration::Declaration,
-        expr::{Assignment, Primary, Unary},
+        declaration::{Declaration, FnDecl},
+        expr::{Assignment, FuncCall, Primary, Unary},
         stmt::Stmt,
     },
 };
@@ -23,7 +23,7 @@ use anyhow::Result;
 
 pub struct TreeWalker {
     env: Rc<RefCell<Environment>>,
-    func_env: FuncEnv,
+    func_env: Rc<RefCell<FuncEnv>>,
 }
 
 impl Evaluator for TreeWalker {
@@ -70,17 +70,28 @@ impl Visitor for TreeWalker {
     }
 
     fn visit_fndecl(&mut self, fndecl: &crate::parse::declaration::FnDecl) -> Self::Output {
-        self.func_env.define(fndecl.clone());
+        self.func_env.borrow_mut().define(fndecl.clone());
         Ok(LoxType::default())
     }
 
     fn visit_vardecl(&mut self, var_decl: &crate::parse::declaration::VarDecl) -> Self::Output {
         let res = if let Some(expr) = &var_decl.value {
-            expr.accept(self)?
+            let r = expr.accept(self);
+            // println!("r2: {:#?}", r);
+            r?
         } else {
             LoxType::Nil
         };
-        self.env.borrow_mut().define(var_decl.ident.clone(), res);
+        match res {
+            LoxType::Fn(_, func) => {
+                // println!("wtf {}, {}", var_decl.ident, func);
+
+                self.func_env
+                    .borrow_mut()
+                    .assign(func, var_decl.ident.clone())
+            }
+            _ => self.env.borrow_mut().define(var_decl.ident.clone(), res),
+        }
         Ok(LoxType::default())
     }
 
@@ -232,14 +243,11 @@ impl Visitor for TreeWalker {
             Primary::Token(token) => match token.kind {
                 TokenType::Ident(ref ident) => {
                     if is_builtin(ident) {
-                        return Ok(LoxType::String(
-                            LoxString::from_str(&format!("<fn {}>", ident)).unwrap(),
-                        ));
+                        //TODO
+                        return Ok(LoxType::Fn(ident.clone(), FnDecl::default()));
                     }
-                    if self.func_env.get(ident).is_ok() {
-                        return Ok(LoxType::String(
-                            LoxString::from_str(&format!("<fn {}>", ident)).unwrap(),
-                        ));
+                    if let Ok(func) = self.func_env.borrow().get(ident) {
+                        return Ok(LoxType::Fn(ident.clone(), func));
                     }
 
                     self.env.borrow().get(ident)
@@ -251,22 +259,65 @@ impl Visitor for TreeWalker {
                 if let Ok(res) = exe_builtin(&funccall.ident) {
                     return Ok(res);
                 }
-                let r = self.func_env.get(&funccall.ident)?.clone();
+                let r = self.func_env.borrow().get(&funccall.ident)?.clone();
                 // execute function
                 // define new scope => call block.accept self in new scope => restore old scope
                 let prev_env_state = self.env.clone();
                 let new_env = Rc::new(RefCell::new(
                     Environment::new().with_parent(prev_env_state.clone()),
                 ));
+                let prev_func_env = self.func_env.clone();
+                let new_func_env = Rc::new(RefCell::new(
+                    FuncEnv::new().with_parent(prev_func_env.clone()),
+                ));
                 for (ident, val) in r.args.iter().zip(funccall.args.iter()) {
-                    new_env
-                        .borrow_mut()
-                        .define(ident.clone(), val.accept(self)?);
+                    let val = val.accept(self)?;
+                    match val {
+                        LoxType::Fn(ident2, body) => {
+                            // print!("P {}, {}", ident, body);
+                            new_func_env.borrow_mut().assign(body, ident.clone())
+                        }
+                        _ => new_env.borrow_mut().define(ident.clone(), val),
+                    }
                 }
                 self.env = new_env;
-                let res = r.body.accept(self);
+                self.func_env = new_func_env;
+                let mut res = r.body.accept(self);
 
                 self.env = prev_env_state;
+                self.func_env = prev_func_env;
+                match &res {
+                    Ok(LoxType::Fn(ident, body)) => {
+                        // println!("{}, {}", ident, body);
+                        self.func_env
+                            .borrow_mut()
+                            .assign(body.clone(), ident.clone());
+                    }
+                    _ => {}
+                }
+                // println!("res; {:#?}", res);
+                for next_call in &funccall.addl {
+                    let c_res = res?;
+                    match c_res {
+                        LoxType::Fn(ident, body) => {
+                            // println!("{}, {}", ident, body);
+                            self.func_env
+                                .borrow_mut()
+                                .assign(body.clone(), ident.clone());
+                            let next_fn = FuncCall {
+                                args: next_call.clone(),
+                                ident,
+                                addl: Vec::new(),
+                            };
+                            res = self.visit_primary(&Primary::Call(next_fn));
+                        }
+                        _ => {
+                            return Err(
+                                RuntimeError::IllegalOp("cannot call non function".into()).into()
+                            )
+                        }
+                    }
+                }
                 res
             }
             Primary::Grouping(expr) => expr.accept(self),
@@ -277,7 +328,14 @@ impl Visitor for TreeWalker {
         match assignment {
             Assignment::Assignment(ident, to) => {
                 let to = to.accept(self)?;
-                self.env.borrow_mut().assign(ident, to.clone())?;
+                match &to {
+                    LoxType::Fn(ident, body) => {
+                        self.func_env
+                            .borrow_mut()
+                            .assign(body.clone(), ident.clone());
+                    }
+                    _ => self.env.borrow_mut().assign(ident, to.clone())?,
+                }
                 Ok(to)
             }
             Assignment::Or(eq) => eq.accept(self),
@@ -289,7 +347,7 @@ impl TreeWalker {
     pub fn new() -> Self {
         Self {
             env: Rc::new(RefCell::new(Environment::new())),
-            func_env: FuncEnv::new(),
+            func_env: Rc::new(RefCell::new(FuncEnv::new())),
         }
     }
 }
